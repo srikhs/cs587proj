@@ -36,5 +36,5 @@ myProgram: Box.go myType.go
 clean:
 	rm -rf myType/ myTypeIndex/
 	rm -f myType.go
-	rm -f myProgram
+	rm -f Box
 	rm -f Box.goo.ethos
