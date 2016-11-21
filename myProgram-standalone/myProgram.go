@@ -28,9 +28,9 @@ func main () {
 	data.Write(fd)
 //	data.WriteVar(path +"foobar")
 	efmt.Println(data)
-	ypoints = data.y1 - data.y
-	xpoints = data.x1 - data.x
-	slope = ypoints/xpoints
+	ypoints := data.y1 - data.y
+	xpoints := data.x1 - data.x
+	slope := ypoints/xpoints
 	efmt.Println(slope)
 //	efmt.Println("saiiiiiiiiiii")
 }
