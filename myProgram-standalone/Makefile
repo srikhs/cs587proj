@@ -27,14 +27,14 @@ install: myProgram
 	setfattr -n user.ethos.typeHash -v $(shell egPrint myType hash MyType) $(install.rootfs)/user/nobody/myDir
 	
 
-myType.go: Box.t
+myType.go: myType.t
 	$(ETN2GO) . myType main $^
 
-myProgram: Box.go myType.go
+myProgram: myProgram.go myType.go
 	ethosGo $^ 
 
 clean:
 	rm -rf myType/ myTypeIndex/
 	rm -f myType.go
-	rm -f Box
-	rm -f Box.goo.ethos
+	rm -f myProgram
+	rm -f myProgram.goo.ethos
