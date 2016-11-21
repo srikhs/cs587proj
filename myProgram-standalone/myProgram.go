@@ -19,14 +19,18 @@ func main () {
 
 
 	data    := MyType {}
-	data.x = 2
-	data.y = 3
-	data.x1 = 6
-	data.y1 = 8
+	data.x = -3
+	data.y = 5
+	data.x1 = 2
+	data.y1 = 1
 	efmt.Println("The input coordinates are") 
 	fd, status := ethos.OpenDirectoryPath(path)
 	data.Write(fd)
 //	data.WriteVar(path +"foobar")
 	efmt.Println(data)
+	ypoints = data.y1 - data.y
+	xpoints = data.x1 - data.x
+	slope = ypoints/xpoints
+	efmt.Println(slope)
 //	efmt.Println("saiiiiiiiiiii")
 }
