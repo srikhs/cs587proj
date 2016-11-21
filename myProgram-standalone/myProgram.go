@@ -23,9 +23,10 @@ func main () {
 	data.y = 2
 	data.x1 = 3
 	data.y1 = 4
+	efmt.Println("The input coordinates are") 
 	fd, status := ethos.OpenDirectoryPath(path)
 	data.Write(fd)
-	data.WriteVar(path +"foobar")
+//	data.WriteVar(path +"foobar")
 	efmt.Println(data)
 //	efmt.Println("saiiiiiiiiiii")
 }
