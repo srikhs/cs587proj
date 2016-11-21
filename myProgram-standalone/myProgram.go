@@ -31,6 +31,6 @@ func main () {
 	ypoints := data.y1 - data.y
 	xpoints := data.x1 - data.x
 	slope := ypoints/xpoints
-	efmt.Println(slope)
+	efmt.Println(data.y1 - data.y)
 //	efmt.Println("saiiiiiiiiiii")
 }
