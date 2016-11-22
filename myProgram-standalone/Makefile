@@ -24,7 +24,7 @@ install: myProgram
 	install myProgram $(install.minimaltd.rootfs)/programs
 	echo -n /programs/myProgram | ethosStringEncode > $(install.rootfs)/etc/init/console
 	mkdir -p $(install.rootfs)/user/nobody/myDir
-	setfattr -n user.ethos.typeHash -v $(shell egPrint myType hash MyType) $(install.rootfs)/user/nobody/myDir
+	setfattr -n user.ethos.typeHash -v $(shell egPrint Box hash MyType) $(install.rootfs)/user/nobody/myDir
 	
 
 Box.go: Box.t
