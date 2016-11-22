@@ -1,3 +1,4 @@
+
 export UDIR= .
 export GOC = x86_64-xen-ethos-6g
 export GOL = x86_64-xen-ethos-6l
@@ -16,15 +17,15 @@ install.minimaltd.rootfs = /var/lib/ethos/minimaltd/rootfs
 
 
 .PHONY: all install
-all: myProgram
+all: Box
 
-install: myProgram
+install: Box
 	ethosTypeInstall $(install.rootfs) $(install.minimaltd.rootfs) myType
-	install myProgram $(install.rootfs)/programs
-	install myProgram $(install.minimaltd.rootfs)/programs
-	echo -n /programs/myProgram | ethosStringEncode > $(install.rootfs)/etc/init/console
+	install Box $(install.rootfs)/programs
+	install Box $(install.minimaltd.rootfs)/programs
+	echo -n /programs/Box | ethosStringEncode > $(install.rootfs)/etc/init/console
 	mkdir -p $(install.rootfs)/user/nobody/myDir
-	setfattr -n user.ethos.typeHash -v $(shell egPrint myType hash MyType) $(install.rootfs)/user/nobody/myDir
+	setfattr -n user.ethos.typeHash -v $(shell egPrint Box hash MyType) $(install.rootfs)/user/nobody/myDir
 	
 
 myType.go: Box.t
@@ -36,5 +37,5 @@ Box: Box.go myType.go
 clean:
 	rm -rf myType/ myTypeIndex/
 	rm -f myType.go
-	rm -f myProgram
-	rm -f myProgram.goo.ethos
+	rm -f Box
+	rm -f Box.goo.ethos
