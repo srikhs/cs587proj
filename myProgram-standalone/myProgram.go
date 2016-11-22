@@ -38,9 +38,6 @@ func main () {
 	p1 := New(3, -7)
 	p2 := New(2, -8)
 
-	dist := p1.Distance(p2)
-	efmt.Println(dist)
-
 	efmt.Println("The input coordinates are") 
 	efmt.Println("First Coordinate")
 	efmt.Println(p1)
