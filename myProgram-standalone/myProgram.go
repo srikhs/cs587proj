@@ -35,8 +35,8 @@ func main () {
 //	data.x1 = 10
 //	data.y1 = 4
 	
-	p1 := New(37, -76)
-	p2 := New(26, -80)
+	p1 := New(3, -7)
+	p2 := New(2, -8)
 
 	dist := p1.Distance(p2)
 	efmt.Println(dist)
