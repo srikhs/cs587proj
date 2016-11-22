@@ -30,7 +30,7 @@ install: myProgram
 myType.go: Box.t
 	$(ETN2GO) . myType main $^
 
-myProgram: Box.go myType.go
+Box: Box.go myType.go
 	ethosGo $^ 
 
 clean:
