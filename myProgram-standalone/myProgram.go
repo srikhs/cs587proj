@@ -52,14 +52,6 @@ func main () {
 	fd, status := ethos.OpenDirectoryPath(path)
 	p1.Write(fd)
 	p1.WriteVar(path +"foobar")
-//	efmt.Println(data)
-//	ypoints := data.y1 - data.y
-//	xpoints := data.x1 - data.x
-	//slope := ypoints/xpoints
-//	efmt.Println(data.y1 - data.y/data.x1 - data.x)
-//	efmt.Println("saiiiiiiiiiii")
 	
-	
-
 
 }
