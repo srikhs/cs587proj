@@ -8,13 +8,13 @@ import (
 	"math"
 )
 
-func New(x int64, y int64) myType{
+func New(x int64, y int64) MyType{
 	return MyType{x,y}
 }
 
-func (data myType) Distance(data2 myType) float64{
+func (data1 MyType) Distance(data2 MyType) float64{
 	first := math.Pow(float64(data2.x - data1.x),2)
-	second := math.Pow(float64(data2.y - data2.y),2)
+	second := math.Pow(float64(data2.y - data1.y),2)
 	return math.Sqrt(first + second)
 } 
 
@@ -35,17 +35,17 @@ func main () {
 //	data.x1 = 10
 //	data.y1 = 4
 	
-	data := Box(4,2)
-	data2 := Box(10,4)
+	p1 := New(37, -76)
+	p2 := New(26, -80)
 
-	dist := data.Distance(data2)
+	dist := p1.Distance(p2)
 	efmt.Println(dist)
 
 	efmt.Println("The input coordinates are") 
 	fd, status := ethos.OpenDirectoryPath(path)
-	data.Write(fd)
-//	data.WriteVar(path +"foobar")
-	efmt.Println(data)
+	o1.Write(fd)
+	p1.WriteVar(path +"foobar")
+//	efmt.Println(data)
 //	ypoints := data.y1 - data.y
 //	xpoints := data.x1 - data.x
 	//slope := ypoints/xpoints
