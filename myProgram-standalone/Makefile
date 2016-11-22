@@ -19,22 +19,22 @@ install.minimaltd.rootfs = /var/lib/ethos/minimaltd/rootfs
 all: myProgram
 
 install: myProgram
-	ethosTypeInstall $(install.rootfs) $(install.minimaltd.rootfs) Box
+	ethosTypeInstall $(install.rootfs) $(install.minimaltd.rootfs) myType
 	install myProgram $(install.rootfs)/programs
 	install myProgram $(install.minimaltd.rootfs)/programs
 	echo -n /programs/myProgram | ethosStringEncode > $(install.rootfs)/etc/init/console
 	mkdir -p $(install.rootfs)/user/nobody/myDir
-	setfattr -n user.ethos.typeHash -v $(shell egPrint Box hash MyType) $(install.rootfs)/user/nobody/myDir
+	setfattr -n user.ethos.typeHash -v $(shell egPrint myType hash MyType) $(install.rootfs)/user/nobody/myDir
 	
 
-myType.go: Box.t
-	$(ETN2GO) . Box main $^
+myType.go: myType.t
+	$(ETN2GO) . myType main $^
 
-myProgram: Box.go myType.go
+myProgram: myProgram.go myType.go
 	ethosGo $^ 
 
 clean:
 	rm -rf myType/ myTypeIndex/
 	rm -f myType.go
-	rm -f Box
-	rm -f Box.goo.ethos
+	rm -f myProgram
+	rm -f myProgram.goo.ethos
