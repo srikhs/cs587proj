@@ -130,15 +130,11 @@ type MyType struct {
      
      y int64
      
-     x1 int64
-     
-     y1 int64
-     
 }
 
 func (e *Encoder) myType(v *MyType) (err os.Error){
      
-     if _, _, error := e.t.PointerCheck(unsafe.Pointer(v), "86d854acbc8163fd694a9285f2786729320105764e6a9b0870c6af33566f9bfdcfe073bad149cffb16b1415e9abe7c2cef79268cad87f09c2fe0a754e747bf48", uint64(unsafe.Sizeof(*v))); error == nil {
+     if _, _, error := e.t.PointerCheck(unsafe.Pointer(v), "b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8", uint64(unsafe.Sizeof(*v))); error == nil {
      	
        err = e.int64(v.x)
        if err != nil {
@@ -146,16 +142,6 @@ func (e *Encoder) myType(v *MyType) (err os.Error){
        }
        
        err = e.int64(v.y)
-       if err != nil {
-       	  return err
-       }
-       
-       err = e.int64(v.x1)
-       if err != nil {
-       	  return err
-       }
-       
-       err = e.int64(v.y1)
        if err != nil {
        	  return err
        }
@@ -179,16 +165,6 @@ func (e *Encoder) myTypeInternal(v *MyType) (err os.Error){
 	     }
      
      	     err = e.int64(v.y)
-	     if err != nil {
-	     	return err
-	     }
-     
-     	     err = e.int64(v.x1)
-	     if err != nil {
-	     	return err
-	     }
-     
-     	     err = e.int64(v.y1)
 	     if err != nil {
 	     	return err
 	     }
@@ -222,24 +198,6 @@ func (d *Decoder) myType() (v *MyType, error os.Error){
      valv.y = *p1
      
      
-     	
-     p2, err2 := d.int64()
-     if err2 != nil {
-     	return &valv, err2
-     }
-     
-     valv.x1 = *p2
-     
-     
-     	
-     p3, err3 := d.int64()
-     if err3 != nil {
-     	return &valv, err3
-     }
-     
-     valv.y1 = *p3
-     
-     
      v = &valv
      return v, nil
 }
@@ -271,24 +229,6 @@ func (d *Decoder) myTypeInternal() (v *MyType, error os.Error){
      valv.y = *p1
      
      
-          
-     p2, err2 := d.int64()
-     if err2 != nil {
-     	return &valv, err2
-     }
-     
-     valv.x1 = *p2
-     
-     
-          
-     p3, err3 := d.int64()
-     if err3 != nil {
-     	return &valv, err3
-     }
-     
-     valv.y1 = *p3
-     
-     
      v = &valv     
      return v, nil
 }
@@ -297,12 +237,12 @@ func (e *Encoder) any(a Any) (err os.Error){
      switch a.Value.(type) {
      
      case MyType:
-     	hashByte, err := hex.DecodeString("86d854acbc8163fd694a9285f2786729320105764e6a9b0870c6af33566f9bfdcfe073bad149cffb16b1415e9abe7c2cef79268cad87f09c2fe0a754e747bf48")
+     	hashByte, err := hex.DecodeString("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")
 	if err != nil {
 	   return err
 	}
-     	// hashByte := []byte("86d854acbc8163fd694a9285f2786729320105764e6a9b0870c6af33566f9bfdcfe073bad149cffb16b1415e9abe7c2cef79268cad87f09c2fe0a754e747bf48")
-     	// e.string("86d854acbc8163fd694a9285f2786729320105764e6a9b0870c6af33566f9bfdcfe073bad149cffb16b1415e9abe7c2cef79268cad87f09c2fe0a754e747bf48")
+     	// hashByte := []byte("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")
+     	// e.string("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")
 	err = e.SliceOfBytes(hashByte)
 	if err != nil {
 	   return err
@@ -454,12 +394,12 @@ func (e *Encoder) anyInternal(a Any) (err os.Error){
      switch a.Value.(type) {
      
      case MyType:
-     	hashByte, err := hex.DecodeString("86d854acbc8163fd694a9285f2786729320105764e6a9b0870c6af33566f9bfdcfe073bad149cffb16b1415e9abe7c2cef79268cad87f09c2fe0a754e747bf48")
+     	hashByte, err := hex.DecodeString("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")
 	if err != nil {
 	   return err
 	}
-     	// hashByte := []byte("86d854acbc8163fd694a9285f2786729320105764e6a9b0870c6af33566f9bfdcfe073bad149cffb16b1415e9abe7c2cef79268cad87f09c2fe0a754e747bf48")
-     	// e.string("86d854acbc8163fd694a9285f2786729320105764e6a9b0870c6af33566f9bfdcfe073bad149cffb16b1415e9abe7c2cef79268cad87f09c2fe0a754e747bf48")
+     	// hashByte := []byte("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")
+     	// e.string("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")
 	err = e.SliceOfBytes(hashByte)
 	if err != nil {
 	   return err
@@ -628,7 +568,7 @@ func (d *Decoder) any() (retValue *Any, error os.Error) {
      
      switch {
      
-     case bytes.Equal(encodedHash, []byte("86d854acbc8163fd694a9285f2786729320105764e6a9b0870c6af33566f9bfdcfe073bad149cffb16b1415e9abe7c2cef79268cad87f09c2fe0a754e747bf48")):
+     case bytes.Equal(encodedHash, []byte("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")):
      	
 	p, err := d.myType()	
 	if err != nil {
@@ -740,7 +680,7 @@ func (d *Decoder) anyInternal() (retValue *Any, error os.Error) {
 
      switch {
      
-     case bytes.Equal(encodedHash, []byte("86d854acbc8163fd694a9285f2786729320105764e6a9b0870c6af33566f9bfdcfe073bad149cffb16b1415e9abe7c2cef79268cad87f09c2fe0a754e747bf48")):
+     case bytes.Equal(encodedHash, []byte("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")):
      	
 	p, err := d.myTypeInternal()
 	if err != nil {
@@ -1749,12 +1689,12 @@ func (t *MyType) ReadVar(path string) (syscall.Status) {
 
 
 func (t *MyType) CreateDirectory(fd syscall.Fd, name string, label string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0x86,0xd8,0x54,0xac,0xbc,0x81,0x63,0xfd,0x69,0x4a,0x92,0x85,0xf2,0x78,0x67,0x29,0x32,0x01,0x05,0x76,0x4e,0x6a,0x9b,0x08,0x70,0xc6,0xaf,0x33,0x56,0x6f,0x9b,0xfd,0xcf,0xe0,0x73,0xba,0xd1,0x49,0xcf,0xfb,0x16,0xb1,0x41,0x5e,0x9a,0xbe,0x7c,0x2c,0xef,0x79,0x26,0x8c,0xad,0x87,0xf0,0x9c,0x2f,0xe0,0xa7,0x54,0xe7,0x47,0xbf,0x48, }  
+       hash := goodmiddleman.HashValue{ 0xb5,0x85,0x98,0xe1,0x9f,0xb3,0x58,0x83,0xb8,0x58,0x49,0x73,0x71,0xf9,0x0b,0x1c,0x30,0xe7,0x73,0x2a,0x23,0x8e,0x30,0xd6,0x2c,0x04,0x1e,0x30,0xce,0x2d,0x78,0x25,0x6b,0x92,0x4d,0xda,0x01,0x02,0x71,0x88,0xf2,0x40,0x89,0x1f,0xfb,0xd8,0x93,0xa3,0x6a,0xfd,0xa5,0xbd,0x81,0x69,0xfe,0xa8,0xba,0x75,0xcd,0xd1,0xd0,0x60,0x5a,0xe8, }  
        return goodmiddleman.CreateDirectory(fd, name, label, hash)
 }
 
 func (t *MyType) CreateDirectoryPath(path string, label string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0x86,0xd8,0x54,0xac,0xbc,0x81,0x63,0xfd,0x69,0x4a,0x92,0x85,0xf2,0x78,0x67,0x29,0x32,0x01,0x05,0x76,0x4e,0x6a,0x9b,0x08,0x70,0xc6,0xaf,0x33,0x56,0x6f,0x9b,0xfd,0xcf,0xe0,0x73,0xba,0xd1,0x49,0xcf,0xfb,0x16,0xb1,0x41,0x5e,0x9a,0xbe,0x7c,0x2c,0xef,0x79,0x26,0x8c,0xad,0x87,0xf0,0x9c,0x2f,0xe0,0xa7,0x54,0xe7,0x47,0xbf,0x48, }
+       hash := goodmiddleman.HashValue{ 0xb5,0x85,0x98,0xe1,0x9f,0xb3,0x58,0x83,0xb8,0x58,0x49,0x73,0x71,0xf9,0x0b,0x1c,0x30,0xe7,0x73,0x2a,0x23,0x8e,0x30,0xd6,0x2c,0x04,0x1e,0x30,0xce,0x2d,0x78,0x25,0x6b,0x92,0x4d,0xda,0x01,0x02,0x71,0x88,0xf2,0x40,0x89,0x1f,0xfb,0xd8,0x93,0xa3,0x6a,0xfd,0xa5,0xbd,0x81,0x69,0xfe,0xa8,0xba,0x75,0xcd,0xd1,0xd0,0x60,0x5a,0xe8, }
        return goodmiddleman.CreateDirectoryPath(path, label, hash)
 }
 type Int8 int8
