@@ -42,6 +42,13 @@ func main () {
 	efmt.Println(dist)
 
 	efmt.Println("The input coordinates are") 
+	efmt.Println("First Coordinate")
+	efmt.Println(p1)
+	efmt.Println("Second Coordinate")
+	efmt.Println(p2)
+	dist := p1.Distance(p2)
+	efmt.Println("Distance between 2 points")
+	efmt.Println(dist)
 	fd, status := ethos.OpenDirectoryPath(path)
 	p1.Write(fd)
 	p1.WriteVar(path +"foobar")
