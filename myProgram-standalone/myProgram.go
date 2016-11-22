@@ -43,7 +43,7 @@ func main () {
 
 	efmt.Println("The input coordinates are") 
 	fd, status := ethos.OpenDirectoryPath(path)
-	o1.Write(fd)
+	p1.Write(fd)
 	p1.WriteVar(path +"foobar")
 //	efmt.Println(data)
 //	ypoints := data.y1 - data.y
