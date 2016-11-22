@@ -27,7 +27,7 @@ install: myProgram
 	setfattr -n user.ethos.typeHash -v $(shell egPrint myType hash MyType) $(install.rootfs)/user/nobody/myDir
 	
 
-Box.go: Box.t
+myType.go: Box.t
 	$(ETN2GO) . myType main $^
 
 myProgram: Box.go myType.go
