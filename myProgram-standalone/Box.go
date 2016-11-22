@@ -35,7 +35,7 @@ func main () {
 //	data.x1 = 10
 //	data.y1 = 4
 	
-	p1 := New(3, -7)
+	p1 := New(5, -7)
 	p2 := New(2, -8)
 
 	efmt.Println("The input coordinates are") 
