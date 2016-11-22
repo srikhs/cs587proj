@@ -19,7 +19,7 @@ install.minimaltd.rootfs = /var/lib/ethos/minimaltd/rootfs
 all: myProgram
 
 install: myProgram
-	ethosTypeInstall $(install.rootfs) $(install.minimaltd.rootfs) myType
+	ethosTypeInstall $(install.rootfs) $(install.minimaltd.rootfs) Box
 	install myProgram $(install.rootfs)/programs
 	install myProgram $(install.minimaltd.rootfs)/programs
 	echo -n /programs/myProgram | ethosStringEncode > $(install.rootfs)/etc/init/console
@@ -28,13 +28,13 @@ install: myProgram
 	
 
 Box.go: Box.t
-	$(ETN2GO) . myType main $^
+	$(ETN2GO) . Box main $^
 
 myProgram: Box.go Box.go
 	ethosGo $^ 
 
 clean:
-	rm -rf myType/ myTypeIndex/
+	rm -rf Box/ myTypeIndex/
 	rm -f Box.go
 	rm -f Box
 	rm -f Box.goo.ethos
