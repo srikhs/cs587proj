@@ -52,6 +52,5 @@ func main () {
 	fd, status := ethos.OpenDirectoryPath(path)
 	p1.Write(fd)
 	p1.WriteVar(path +"foobar")
-	
-
+	efmt.Println("The desired operations have been performed")
 }
