@@ -6,9 +6,6 @@ import (
 	ethosLog "ethos/log"
 	"ethos/efmt"
 	"math"
-
-    	"os"
-    	"log"
 )
 
 func New(x int64, y int64) MyType{
@@ -32,19 +29,23 @@ func main () {
 	}
 
 
-//comment
-
-	b, err := ioutil.ReadFile("one.txt") // just pass the file name
-    if err != nil {
-        efmt.Print(err)
-    }
-
-    efmt.Println(b) // print the content as 'bytes'
-
-    str := string(b) // convert content to a 'string'
-
-    efmt.Println(str) // print the content as a 'string'
+//	data    := MyType {}
+//	data.x = 4
+//	data.y = 2
+//	data.x1 = 10
+//	data.y1 = 4
 	
+	p1 := New(5, -7)
+	p2 := New(2, -8)
+
+	efmt.Println("The input coordinates are") 
+	efmt.Println("First Coordinate")
+	efmt.Println(p1)
+	efmt.Println("Second Coordinate")
+	efmt.Println(p2)
+	dist := p1.Distance(p2)
+	efmt.Println("Distance between 2 points")
+	efmt.Println(dist)
 	fd, status := ethos.OpenDirectoryPath(path)
 	p1.Write(fd)
 	p1.WriteVar(path +"foobar")
