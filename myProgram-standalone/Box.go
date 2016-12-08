@@ -9,6 +9,7 @@ import (
 	
 )
 
+
 func main () {
 	me := syscall.GetUser()
 	path:= "/user/"+me +"/myDir/"
@@ -21,8 +22,8 @@ func main () {
 	status := data.CreateDirectory("/user/said3","")
 	efmt.Println("Sai",status)
 	
-	data.Field1 = "am"
-	data.Field2 = "happy"
+	data.Field1 = "How"
+	data.Field2 = "Are"
 
 	efmt.Println("Sai, Input", data)
 
@@ -31,10 +32,16 @@ func main () {
 	
 	d:= MyType{"bar","aa"}
 	status = d.ReadVar("/user/said3/foo.txt")
-
+	
+		
 	efmt.Println("Sai" , status)
-	efmt.Println("Sai Read out", d)
+	efmt.Println("Sai Read out", d.Field1)
 
-	
-	
+	if d.Field1 == "is"{
+	efmt.Println("Sai found the word")
+	}else
+	{
+	efmt.Println("Sai not found")
+	}
+
 	}
