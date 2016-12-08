@@ -32,7 +32,7 @@ func main () {
 	}
 
 
-
+//comment
 
 	b, err := ioutil.ReadFile("one.txt") // just pass the file name
     if err != nil {
