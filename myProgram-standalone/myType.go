@@ -10,7 +10,6 @@ import(
 	"encoding/hex"
 	"time"
 	"fmt"
-	
 	"ethos/syscall"
 	
 	"ethos/goodmiddleman"
@@ -23,13 +22,13 @@ import(
 var xxx = bytes.MinRead
 var yyy hex.InvalidHexCharError
 var sunday = time.Sunday // this needs to be remove after we fixed the sleep in Ipc and IpcWrite.
+var the_import_is_not_used_error_is_not_helpful_It_depends_if_need_syscall_and_Ill_know_that_much_later syscall.Fd
 
-
-func Ipc(hostname string, serviceName string) (*Encoder, *Decoder, syscall.Status) {
-     serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+func Ipc(hostname string, serviceName string) (syscall.Fd, syscall.Status) {
+     serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
      if status != syscall.StatusOk {
                   log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
-		  return nil, nil, status
+		  return 0, status
      }
 
      sName := serviceName
@@ -43,18 +42,13 @@ func Ipc(hostname string, serviceName string) (*Encoder, *Decoder, syscall.Statu
      netFd, status := goodmiddleman.IpcRepeat(serviceFd, sName, hostname, nil)
      if status != syscall.StatusOk {
                 log.Fatalf ("Error calling Ipc: %v\n", status)
-	    return nil, nil, status	
+	    return 0, status
      }
-     writer := goodmiddleman.NewWriter(netFd)
-     reader := goodmiddleman.NewReader(netFd)
-     goodmiddleman.Close(serviceFd)
-     e := NewEncoder(writer)
-     d := NewDecoder(reader)
-     return e, d, syscall.StatusOk
+     return netFd, syscall.StatusOk
 }
 
 func Advertise(serviceName string) (listeningFd syscall.Fd, status syscall.Status) {
-	serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+	serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
 		return 0, status
@@ -69,18 +63,13 @@ func Advertise(serviceName string) (listeningFd syscall.Fd, status syscall.Statu
 	return listeningFd, status
 }
 
-func Import(listeningFd syscall.Fd) (user []byte, e *Encoder, d *Decoder, status syscall.Status) {
+func Import(listeningFd syscall.Fd) (user []byte, fd syscall.Fd, status syscall.Status) {
      user, netFd, status := goodmiddleman.Import (listeningFd)
      if status != syscall.StatusOk {
                 log.Fatalf ("Error calling Import: %v\n", status)
-		return []byte{}, nil, nil, status
+		return []byte{}, 0, status
      }
-     writer := goodmiddleman.NewWriter(netFd)
-     reader := goodmiddleman.NewReader(netFd)
-     goodmiddleman.Close(listeningFd)
-     e = NewEncoder(writer)
-     d = NewDecoder(reader)
-     return user, e, d, syscall.StatusOk
+     return user, netFd, syscall.StatusOk
 }
 
 type EncoderDecoderFd struct {
@@ -91,7 +80,7 @@ type EncoderDecoderFd struct {
 
 func IpcEncoderDecoder(hostname string, serviceName string) (EncoderDecoderFd, syscall.Status) {
      var ed EncoderDecoderFd
-     serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+     serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
      if status != syscall.StatusOk {
 		  return ed, status
      }
@@ -126,22 +115,22 @@ func (ed *EncoderDecoderFd) Close() {
 
 type MyType struct {
      
-     x int64
+     Field1 string
      
-     y int64
+     Field2 string
      
 }
 
 func (e *Encoder) myType(v *MyType) (err os.Error){
      
-     if _, _, error := e.t.PointerCheck(unsafe.Pointer(v), "b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8", uint64(unsafe.Sizeof(*v))); error == nil {
+     if _, _, error := e.t.PointerCheck(unsafe.Pointer(v), "80ed6e1a4c926e40747652edb0fb509eeb5891b47cd903b78c6a938307bdc7fbd4482be08f521ef1ef0e43dca4fa824cf1f9b35f8e7fb38a47e332bd8557cf02", uint64(unsafe.Sizeof(*v))); error == nil {
      	
-       err = e.int64(v.x)
+       err = e.string(v.Field1)
        if err != nil {
        	  return err
        }
        
-       err = e.int64(v.y)
+       err = e.string(v.Field2)
        if err != nil {
        	  return err
        }
@@ -159,12 +148,12 @@ func (e *Encoder) MyType (v *MyType) (err os.Error){
 func (e *Encoder) myTypeInternal(v *MyType) (err os.Error){
      
      
-     	     err = e.int64(v.x)
+     	     err = e.string(v.Field1)
 	     if err != nil {
 	     	return err
 	     }
      
-     	     err = e.int64(v.y)
+     	     err = e.string(v.Field2)
 	     if err != nil {
 	     	return err
 	     }
@@ -181,21 +170,21 @@ func (d *Decoder) myType() (v *MyType, error os.Error){
      d.indexToValue = append(d.indexToValue, &valv)
      
      	
-     p0, err0 := d.int64()
+     p0, err0 := d.string()
      if err0 != nil {
      	return &valv, err0
      }
      
-     valv.x = *p0
+     valv.Field1 = *p0
      
      
      	
-     p1, err1 := d.int64()
+     p1, err1 := d.string()
      if err1 != nil {
      	return &valv, err1
      }
      
-     valv.y = *p1
+     valv.Field2 = *p1
      
      
      v = &valv
@@ -212,21 +201,21 @@ func (d *Decoder) myTypeInternal() (v *MyType, error os.Error){
      var valv MyType
      
           
-     p0, err0 := d.int64()
+     p0, err0 := d.string()
      if err0 != nil {
      	return &valv, err0
      }
      
-     valv.x = *p0
+     valv.Field1 = *p0
      
      
           
-     p1, err1 := d.int64()
+     p1, err1 := d.string()
      if err1 != nil {
      	return &valv, err1
      }
      
-     valv.y = *p1
+     valv.Field2 = *p1
      
      
      v = &valv     
@@ -237,12 +226,12 @@ func (e *Encoder) any(a Any) (err os.Error){
      switch a.Value.(type) {
      
      case MyType:
-     	hashByte, err := hex.DecodeString("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")
+     	hashByte, err := hex.DecodeString("80ed6e1a4c926e40747652edb0fb509eeb5891b47cd903b78c6a938307bdc7fbd4482be08f521ef1ef0e43dca4fa824cf1f9b35f8e7fb38a47e332bd8557cf02")
 	if err != nil {
 	   return err
 	}
-     	// hashByte := []byte("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")
-     	// e.string("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")
+     	// hashByte := []byte("80ed6e1a4c926e40747652edb0fb509eeb5891b47cd903b78c6a938307bdc7fbd4482be08f521ef1ef0e43dca4fa824cf1f9b35f8e7fb38a47e332bd8557cf02")
+     	// e.string("80ed6e1a4c926e40747652edb0fb509eeb5891b47cd903b78c6a938307bdc7fbd4482be08f521ef1ef0e43dca4fa824cf1f9b35f8e7fb38a47e332bd8557cf02")
 	err = e.SliceOfBytes(hashByte)
 	if err != nil {
 	   return err
@@ -394,12 +383,12 @@ func (e *Encoder) anyInternal(a Any) (err os.Error){
      switch a.Value.(type) {
      
      case MyType:
-     	hashByte, err := hex.DecodeString("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")
+     	hashByte, err := hex.DecodeString("80ed6e1a4c926e40747652edb0fb509eeb5891b47cd903b78c6a938307bdc7fbd4482be08f521ef1ef0e43dca4fa824cf1f9b35f8e7fb38a47e332bd8557cf02")
 	if err != nil {
 	   return err
 	}
-     	// hashByte := []byte("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")
-     	// e.string("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")
+     	// hashByte := []byte("80ed6e1a4c926e40747652edb0fb509eeb5891b47cd903b78c6a938307bdc7fbd4482be08f521ef1ef0e43dca4fa824cf1f9b35f8e7fb38a47e332bd8557cf02")
+     	// e.string("80ed6e1a4c926e40747652edb0fb509eeb5891b47cd903b78c6a938307bdc7fbd4482be08f521ef1ef0e43dca4fa824cf1f9b35f8e7fb38a47e332bd8557cf02")
 	err = e.SliceOfBytes(hashByte)
 	if err != nil {
 	   return err
@@ -568,7 +557,7 @@ func (d *Decoder) any() (retValue *Any, error os.Error) {
      
      switch {
      
-     case bytes.Equal(encodedHash, []byte("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")):
+     case bytes.Equal(encodedHash, []byte("80ed6e1a4c926e40747652edb0fb509eeb5891b47cd903b78c6a938307bdc7fbd4482be08f521ef1ef0e43dca4fa824cf1f9b35f8e7fb38a47e332bd8557cf02")):
      	
 	p, err := d.myType()	
 	if err != nil {
@@ -680,7 +669,7 @@ func (d *Decoder) anyInternal() (retValue *Any, error os.Error) {
 
      switch {
      
-     case bytes.Equal(encodedHash, []byte("b58598e19fb35883b858497371f90b1c30e7732a238e30d62c041e30ce2d78256b924dda01027188f240891ffbd893a36afda5bd8169fea8ba75cdd1d0605ae8")):
+     case bytes.Equal(encodedHash, []byte("80ed6e1a4c926e40747652edb0fb509eeb5891b47cd903b78c6a938307bdc7fbd4482be08f521ef1ef0e43dca4fa824cf1f9b35f8e7fb38a47e332bd8557cf02")):
      	
 	p, err := d.myTypeInternal()
 	if err != nil {
@@ -1584,36 +1573,16 @@ func (bo *BufferedIO) Close() os.Error{
 	//return bo.conn.Close()
 }*/
 func (t *MyType) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscall.Status) {
-	serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+	serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
 		return 0, status
 	}
 
-	sName := serviceName
-	for i:=len(serviceName)-1; i>=0; i-- {
-		if (serviceName[i]=='/') {
-			sName = serviceName[i+1:]
-		}
-	}
-
-
-	netFd, status := goodmiddleman.IpcRepeat(serviceFd, sName, hostname, nil)
+	netFd, status := goodmiddleman.Ipc(serviceFd, serviceName, hostname, t)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling IpcWriteMyType: %v\n", status)
 		return 0, status
-	}
-	writer := goodmiddleman.NewWriter(netFd)
-	goodmiddleman.Close(serviceFd)
-	e := NewEncoder(writer)
-	err := e.MyType(t)
-	if err != nil {
-		return 0, syscall.StatusWriteFail
-	}
-
-	err = e.Flush()
-	if err != nil {
-		return 0, syscall.StatusWriteFail
 	}
 
 	return netFd, syscall.StatusOk
@@ -1637,6 +1606,23 @@ func (t *MyType) Write(fd syscall.Fd) (syscall.Status) {
 }
 
 
+func (t *MyType) WriteBuffer() ([]byte, syscall.Status) {
+	var buffer *bytes.Buffer
+	e := NewEncoder(buffer)
+	err := e.MyType(t)
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	err = e.Flush()
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+
+	return buffer.Bytes(), syscall.StatusOk
+}
+
 func (t *MyType) WriteVar(path string) (syscall.Status) {
 	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
 	if status != syscall.StatusOk {
@@ -1654,21 +1640,33 @@ func (t *MyType) WriteVar(path string) (syscall.Status) {
 		return syscall.StatusWriteFail
 	}
 
+
 	return syscall.StatusOk
 }
 
 
 func (t *MyType) Read(fd syscall.Fd) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewReader(fd))
+
 	value, err := d.MyType()
 	if err != nil {
 		return syscall.StatusFail
 	}
 
-	t = value
+	*t = MyType(*value)
 	return syscall.StatusOk
 }
 
+func (t *MyType) ReadBuffer(buffer []byte) (syscall.Status) {
+	d := NewDecoder(bytes.NewBuffer(buffer))
+	value, err := d.MyType()
+	if err != nil {
+		return syscall.StatusFail
+	}
+
+	*t = MyType(*value)
+	return syscall.StatusOk
+}
 
 func (t *MyType) ReadVar(path string) (syscall.Status) {
 	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
@@ -1682,25 +1680,23 @@ func (t *MyType) ReadVar(path string) (syscall.Status) {
 		return syscall.StatusFail
 	}
 
-	t = value
+	*t = MyType(*value)
 	return syscall.StatusOk
 }
 
-
-
-func (t *MyType) CreateDirectory(fd syscall.Fd, name string, label string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0xb5,0x85,0x98,0xe1,0x9f,0xb3,0x58,0x83,0xb8,0x58,0x49,0x73,0x71,0xf9,0x0b,0x1c,0x30,0xe7,0x73,0x2a,0x23,0x8e,0x30,0xd6,0x2c,0x04,0x1e,0x30,0xce,0x2d,0x78,0x25,0x6b,0x92,0x4d,0xda,0x01,0x02,0x71,0x88,0xf2,0x40,0x89,0x1f,0xfb,0xd8,0x93,0xa3,0x6a,0xfd,0xa5,0xbd,0x81,0x69,0xfe,0xa8,0xba,0x75,0xcd,0xd1,0xd0,0x60,0x5a,0xe8, }  
-       return goodmiddleman.CreateDirectory(fd, name, label, hash)
+func (t *MyType) CreateDirectory(path string, label string) (syscall.Status) {
+       hash := goodmiddleman.HashValue{ 0x80,0xed,0x6e,0x1a,0x4c,0x92,0x6e,0x40,0x74,0x76,0x52,0xed,0xb0,0xfb,0x50,0x9e,0xeb,0x58,0x91,0xb4,0x7c,0xd9,0x03,0xb7,0x8c,0x6a,0x93,0x83,0x07,0xbd,0xc7,0xfb,0xd4,0x48,0x2b,0xe0,0x8f,0x52,0x1e,0xf1,0xef,0x0e,0x43,0xdc,0xa4,0xfa,0x82,0x4c,0xf1,0xf9,0xb3,0x5f,0x8e,0x7f,0xb3,0x8a,0x47,0xe3,0x32,0xbd,0x85,0x57,0xcf,0x02, }
+       return goodmiddleman.CreateDirectory(path, label, hash)
 }
 
-func (t *MyType) CreateDirectoryPath(path string, label string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0xb5,0x85,0x98,0xe1,0x9f,0xb3,0x58,0x83,0xb8,0x58,0x49,0x73,0x71,0xf9,0x0b,0x1c,0x30,0xe7,0x73,0x2a,0x23,0x8e,0x30,0xd6,0x2c,0x04,0x1e,0x30,0xce,0x2d,0x78,0x25,0x6b,0x92,0x4d,0xda,0x01,0x02,0x71,0x88,0xf2,0x40,0x89,0x1f,0xfb,0xd8,0x93,0xa3,0x6a,0xfd,0xa5,0xbd,0x81,0x69,0xfe,0xa8,0xba,0x75,0xcd,0xd1,0xd0,0x60,0x5a,0xe8, }
-       return goodmiddleman.CreateDirectoryPath(path, label, hash)
+
+func (t *MyType) GetHash() ([]byte) {
+       return []byte{ 0x80,0xed,0x6e,0x1a,0x4c,0x92,0x6e,0x40,0x74,0x76,0x52,0xed,0xb0,0xfb,0x50,0x9e,0xeb,0x58,0x91,0xb4,0x7c,0xd9,0x03,0xb7,0x8c,0x6a,0x93,0x83,0x07,0xbd,0xc7,0xfb,0xd4,0x48,0x2b,0xe0,0x8f,0x52,0x1e,0xf1,0xef,0x0e,0x43,0xdc,0xa4,0xfa,0x82,0x4c,0xf1,0xf9,0xb3,0x5f,0x8e,0x7f,0xb3,0x8a,0x47,0xe3,0x32,0xbd,0x85,0x57,0xcf,0x02, }
 }
 type Int8 int8
 
 func (t *Int8) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscall.Status) {
-	serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+	serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
 		return 0, status
@@ -1714,22 +1710,10 @@ func (t *Int8) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscal
 	}
 
 
-	netFd, status := goodmiddleman.IpcRepeat(serviceFd, sName, hostname, nil)
+	netFd, status := goodmiddleman.Ipc(serviceFd, sName, hostname, t)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling IpcWriteInt8: %v\n", status)
 		return 0, status
-	}
-	writer := goodmiddleman.NewWriter(netFd)
-	goodmiddleman.Close(serviceFd)
-	e := NewEncoder(writer)
-	err := e.Int8(int8(*t))
-	if err != nil {
-		return 0, syscall.StatusWriteFail
-	}
-
-	err = e.Flush()
-	if err != nil {
-		return 0, syscall.StatusWriteFail
 	}
 
 	return netFd, syscall.StatusOk
@@ -1752,8 +1736,12 @@ func (t *Int8) Write(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Int8) WriteVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Int8) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 	e := NewEncoder(goodmiddleman.NewVarWriter(fd, name))
 	err := e.Int8(int8(*t))
 	if err != nil {
@@ -1765,9 +1753,25 @@ func (t *Int8) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 		return syscall.StatusWriteFail
 	}
 
+
 	return syscall.StatusOk
 }
 
+func (t *Int8) WriteBuffer() ([]byte, syscall.Status) {
+	var buffer *bytes.Buffer
+	e := NewEncoder(buffer)
+	err := e.Int8(int8(*t))
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	err = e.Flush()
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	return buffer.Bytes(), syscall.StatusOk
+}
 
 func (t *Int8) Read(fd syscall.Fd) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewReader(fd))
@@ -1780,8 +1784,12 @@ func (t *Int8) Read(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Int8) ReadVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Int8) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewVarReader(fd, name))
 	value, err := d.Int8()
 	if err != nil {
@@ -1792,21 +1800,31 @@ func (t *Int8) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Int8) ReadBuffer(buffer []byte) (syscall.Status) {
+	d := NewDecoder(bytes.NewBuffer(buffer))
+	value, err := d.Int8()
+	if err != nil {
+		return syscall.StatusFail
+	}
 
-
-func (t *Int8) CreateDirectory(fd syscall.Fd, name string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0xc2,0x71,0x6e,0x3c,0x34,0x13,0xc0,0xbe,0xb3,0x9e,0x2e,0xbc,0xc7,0x99,0x62,0x3f,0x28,0xe9,0x9d,0x19,0x71,0x6a,0x00,0x5b,0x69,0x4b,0x1c,0xbb,0x3d,0x8d,0xcc,0x45,0xbd,0x51,0xca,0x50,0xc7,0x3f,0x8a,0x64,0xc8,0xa0,0xf0,0x0b,0x46,0x9a,0x87,0x05,0xe9,0x3c,0xb9,0x27,0x91,0xdf,0x95,0x88,0x1b,0x2e,0xfa,0x9f,0xc0,0x1f,0xcb,0xad, }  
-       return goodmiddleman.CreateDirectory(fd, name, "", hash)
+	*t = Int8(*value)
+	return syscall.StatusOk
 }
 
-func (t *Int8) CreateDirectoryPath(path string, name string) (syscall.Status) {
+
+func (t *Int8) CreateDirectory(path string, name string) (syscall.Status) {
        hash := goodmiddleman.HashValue{ 0xc2,0x71,0x6e,0x3c,0x34,0x13,0xc0,0xbe,0xb3,0x9e,0x2e,0xbc,0xc7,0x99,0x62,0x3f,0x28,0xe9,0x9d,0x19,0x71,0x6a,0x00,0x5b,0x69,0x4b,0x1c,0xbb,0x3d,0x8d,0xcc,0x45,0xbd,0x51,0xca,0x50,0xc7,0x3f,0x8a,0x64,0xc8,0xa0,0xf0,0x0b,0x46,0x9a,0x87,0x05,0xe9,0x3c,0xb9,0x27,0x91,0xdf,0x95,0x88,0x1b,0x2e,0xfa,0x9f,0xc0,0x1f,0xcb,0xad, }
-       return goodmiddleman.CreateDirectoryPath(path,"", hash)
+       return goodmiddleman.CreateDirectory(path,"", hash)
+}
+
+
+func (t *Int8) GetHash() ([]byte) {
+	return []byte{ 0xc2,0x71,0x6e,0x3c,0x34,0x13,0xc0,0xbe,0xb3,0x9e,0x2e,0xbc,0xc7,0x99,0x62,0x3f,0x28,0xe9,0x9d,0x19,0x71,0x6a,0x00,0x5b,0x69,0x4b,0x1c,0xbb,0x3d,0x8d,0xcc,0x45,0xbd,0x51,0xca,0x50,0xc7,0x3f,0x8a,0x64,0xc8,0xa0,0xf0,0x0b,0x46,0x9a,0x87,0x05,0xe9,0x3c,0xb9,0x27,0x91,0xdf,0x95,0x88,0x1b,0x2e,0xfa,0x9f,0xc0,0x1f,0xcb,0xad, }
 }
 type Uint8 uint8
 
 func (t *Uint8) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscall.Status) {
-	serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+	serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
 		return 0, status
@@ -1820,22 +1838,10 @@ func (t *Uint8) IpcWrite(serviceName string, hostname string) (syscall.Fd, sysca
 	}
 
 
-	netFd, status := goodmiddleman.IpcRepeat(serviceFd, sName, hostname, nil)
+	netFd, status := goodmiddleman.Ipc(serviceFd, sName, hostname, t)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling IpcWriteUint8: %v\n", status)
 		return 0, status
-	}
-	writer := goodmiddleman.NewWriter(netFd)
-	goodmiddleman.Close(serviceFd)
-	e := NewEncoder(writer)
-	err := e.Uint8(uint8(*t))
-	if err != nil {
-		return 0, syscall.StatusWriteFail
-	}
-
-	err = e.Flush()
-	if err != nil {
-		return 0, syscall.StatusWriteFail
 	}
 
 	return netFd, syscall.StatusOk
@@ -1858,8 +1864,12 @@ func (t *Uint8) Write(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Uint8) WriteVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Uint8) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 	e := NewEncoder(goodmiddleman.NewVarWriter(fd, name))
 	err := e.Uint8(uint8(*t))
 	if err != nil {
@@ -1871,9 +1881,25 @@ func (t *Uint8) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 		return syscall.StatusWriteFail
 	}
 
+
 	return syscall.StatusOk
 }
 
+func (t *Uint8) WriteBuffer() ([]byte, syscall.Status) {
+	var buffer *bytes.Buffer
+	e := NewEncoder(buffer)
+	err := e.Uint8(uint8(*t))
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	err = e.Flush()
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	return buffer.Bytes(), syscall.StatusOk
+}
 
 func (t *Uint8) Read(fd syscall.Fd) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewReader(fd))
@@ -1886,8 +1912,12 @@ func (t *Uint8) Read(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Uint8) ReadVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Uint8) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewVarReader(fd, name))
 	value, err := d.Uint8()
 	if err != nil {
@@ -1898,21 +1928,31 @@ func (t *Uint8) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Uint8) ReadBuffer(buffer []byte) (syscall.Status) {
+	d := NewDecoder(bytes.NewBuffer(buffer))
+	value, err := d.Uint8()
+	if err != nil {
+		return syscall.StatusFail
+	}
 
-
-func (t *Uint8) CreateDirectory(fd syscall.Fd, name string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0x09,0x66,0x78,0xbb,0x4a,0x86,0x63,0x8d,0x8e,0xc6,0x58,0x8e,0xcc,0x2d,0x89,0x5a,0x5c,0x17,0xb4,0x86,0x37,0x8c,0x81,0xc2,0xf2,0xac,0xf2,0x48,0x67,0x57,0x82,0x13,0x3e,0x2e,0x7d,0x80,0xb6,0x66,0x8d,0x84,0xc4,0x55,0xf4,0xc9,0xe1,0x33,0xfc,0x71,0x0b,0x77,0x43,0x63,0x06,0x82,0x76,0x63,0x07,0xbc,0xf1,0x64,0xdb,0xd9,0x5c,0x93, }  
-       return goodmiddleman.CreateDirectory(fd, name, "", hash)
+	*t = Uint8(*value)
+	return syscall.StatusOk
 }
 
-func (t *Uint8) CreateDirectoryPath(path string, name string) (syscall.Status) {
+
+func (t *Uint8) CreateDirectory(path string, name string) (syscall.Status) {
        hash := goodmiddleman.HashValue{ 0x09,0x66,0x78,0xbb,0x4a,0x86,0x63,0x8d,0x8e,0xc6,0x58,0x8e,0xcc,0x2d,0x89,0x5a,0x5c,0x17,0xb4,0x86,0x37,0x8c,0x81,0xc2,0xf2,0xac,0xf2,0x48,0x67,0x57,0x82,0x13,0x3e,0x2e,0x7d,0x80,0xb6,0x66,0x8d,0x84,0xc4,0x55,0xf4,0xc9,0xe1,0x33,0xfc,0x71,0x0b,0x77,0x43,0x63,0x06,0x82,0x76,0x63,0x07,0xbc,0xf1,0x64,0xdb,0xd9,0x5c,0x93, }
-       return goodmiddleman.CreateDirectoryPath(path,"", hash)
+       return goodmiddleman.CreateDirectory(path,"", hash)
+}
+
+
+func (t *Uint8) GetHash() ([]byte) {
+	return []byte{ 0x09,0x66,0x78,0xbb,0x4a,0x86,0x63,0x8d,0x8e,0xc6,0x58,0x8e,0xcc,0x2d,0x89,0x5a,0x5c,0x17,0xb4,0x86,0x37,0x8c,0x81,0xc2,0xf2,0xac,0xf2,0x48,0x67,0x57,0x82,0x13,0x3e,0x2e,0x7d,0x80,0xb6,0x66,0x8d,0x84,0xc4,0x55,0xf4,0xc9,0xe1,0x33,0xfc,0x71,0x0b,0x77,0x43,0x63,0x06,0x82,0x76,0x63,0x07,0xbc,0xf1,0x64,0xdb,0xd9,0x5c,0x93, }
 }
 type Bool bool
 
 func (t *Bool) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscall.Status) {
-	serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+	serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
 		return 0, status
@@ -1926,22 +1966,10 @@ func (t *Bool) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscal
 	}
 
 
-	netFd, status := goodmiddleman.IpcRepeat(serviceFd, sName, hostname, nil)
+	netFd, status := goodmiddleman.Ipc(serviceFd, sName, hostname, t)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling IpcWriteBool: %v\n", status)
 		return 0, status
-	}
-	writer := goodmiddleman.NewWriter(netFd)
-	goodmiddleman.Close(serviceFd)
-	e := NewEncoder(writer)
-	err := e.Bool(bool(*t))
-	if err != nil {
-		return 0, syscall.StatusWriteFail
-	}
-
-	err = e.Flush()
-	if err != nil {
-		return 0, syscall.StatusWriteFail
 	}
 
 	return netFd, syscall.StatusOk
@@ -1964,8 +1992,12 @@ func (t *Bool) Write(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Bool) WriteVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Bool) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 	e := NewEncoder(goodmiddleman.NewVarWriter(fd, name))
 	err := e.Bool(bool(*t))
 	if err != nil {
@@ -1977,9 +2009,25 @@ func (t *Bool) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 		return syscall.StatusWriteFail
 	}
 
+
 	return syscall.StatusOk
 }
 
+func (t *Bool) WriteBuffer() ([]byte, syscall.Status) {
+	var buffer *bytes.Buffer
+	e := NewEncoder(buffer)
+	err := e.Bool(bool(*t))
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	err = e.Flush()
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	return buffer.Bytes(), syscall.StatusOk
+}
 
 func (t *Bool) Read(fd syscall.Fd) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewReader(fd))
@@ -1992,8 +2040,12 @@ func (t *Bool) Read(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Bool) ReadVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Bool) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewVarReader(fd, name))
 	value, err := d.Bool()
 	if err != nil {
@@ -2004,21 +2056,31 @@ func (t *Bool) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Bool) ReadBuffer(buffer []byte) (syscall.Status) {
+	d := NewDecoder(bytes.NewBuffer(buffer))
+	value, err := d.Bool()
+	if err != nil {
+		return syscall.StatusFail
+	}
 
-
-func (t *Bool) CreateDirectory(fd syscall.Fd, name string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0x3e,0x76,0x06,0x81,0x73,0x27,0x61,0xed,0x16,0x8e,0xa3,0x08,0xe1,0x10,0x11,0x85,0xe1,0xbd,0x39,0x02,0xee,0x67,0x60,0x21,0x6a,0x59,0xc4,0x07,0x5a,0x99,0xc1,0x46,0xb7,0xcd,0x98,0x14,0xce,0x14,0x47,0x0e,0xb0,0x80,0x6d,0x91,0x66,0x50,0xb0,0xe5,0x0e,0x77,0x6f,0x53,0xe5,0xd1,0x72,0x28,0x1d,0xd0,0xe1,0x70,0x43,0xc8,0x65,0x39, }  
-       return goodmiddleman.CreateDirectory(fd, name, "", hash)
+	*t = Bool(*value)
+	return syscall.StatusOk
 }
 
-func (t *Bool) CreateDirectoryPath(path string, name string) (syscall.Status) {
+
+func (t *Bool) CreateDirectory(path string, name string) (syscall.Status) {
        hash := goodmiddleman.HashValue{ 0x3e,0x76,0x06,0x81,0x73,0x27,0x61,0xed,0x16,0x8e,0xa3,0x08,0xe1,0x10,0x11,0x85,0xe1,0xbd,0x39,0x02,0xee,0x67,0x60,0x21,0x6a,0x59,0xc4,0x07,0x5a,0x99,0xc1,0x46,0xb7,0xcd,0x98,0x14,0xce,0x14,0x47,0x0e,0xb0,0x80,0x6d,0x91,0x66,0x50,0xb0,0xe5,0x0e,0x77,0x6f,0x53,0xe5,0xd1,0x72,0x28,0x1d,0xd0,0xe1,0x70,0x43,0xc8,0x65,0x39, }
-       return goodmiddleman.CreateDirectoryPath(path,"", hash)
+       return goodmiddleman.CreateDirectory(path,"", hash)
+}
+
+
+func (t *Bool) GetHash() ([]byte) {
+	return []byte{ 0x3e,0x76,0x06,0x81,0x73,0x27,0x61,0xed,0x16,0x8e,0xa3,0x08,0xe1,0x10,0x11,0x85,0xe1,0xbd,0x39,0x02,0xee,0x67,0x60,0x21,0x6a,0x59,0xc4,0x07,0x5a,0x99,0xc1,0x46,0xb7,0xcd,0x98,0x14,0xce,0x14,0x47,0x0e,0xb0,0x80,0x6d,0x91,0x66,0x50,0xb0,0xe5,0x0e,0x77,0x6f,0x53,0xe5,0xd1,0x72,0x28,0x1d,0xd0,0xe1,0x70,0x43,0xc8,0x65,0x39, }
 }
 type Int16 int16
 
 func (t *Int16) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscall.Status) {
-	serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+	serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
 		return 0, status
@@ -2032,22 +2094,10 @@ func (t *Int16) IpcWrite(serviceName string, hostname string) (syscall.Fd, sysca
 	}
 
 
-	netFd, status := goodmiddleman.IpcRepeat(serviceFd, sName, hostname, nil)
+	netFd, status := goodmiddleman.Ipc(serviceFd, sName, hostname, t)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling IpcWriteInt16: %v\n", status)
 		return 0, status
-	}
-	writer := goodmiddleman.NewWriter(netFd)
-	goodmiddleman.Close(serviceFd)
-	e := NewEncoder(writer)
-	err := e.Int16(int16(*t))
-	if err != nil {
-		return 0, syscall.StatusWriteFail
-	}
-
-	err = e.Flush()
-	if err != nil {
-		return 0, syscall.StatusWriteFail
 	}
 
 	return netFd, syscall.StatusOk
@@ -2070,8 +2120,12 @@ func (t *Int16) Write(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Int16) WriteVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Int16) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 	e := NewEncoder(goodmiddleman.NewVarWriter(fd, name))
 	err := e.Int16(int16(*t))
 	if err != nil {
@@ -2083,9 +2137,25 @@ func (t *Int16) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 		return syscall.StatusWriteFail
 	}
 
+
 	return syscall.StatusOk
 }
 
+func (t *Int16) WriteBuffer() ([]byte, syscall.Status) {
+	var buffer *bytes.Buffer
+	e := NewEncoder(buffer)
+	err := e.Int16(int16(*t))
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	err = e.Flush()
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	return buffer.Bytes(), syscall.StatusOk
+}
 
 func (t *Int16) Read(fd syscall.Fd) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewReader(fd))
@@ -2098,8 +2168,12 @@ func (t *Int16) Read(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Int16) ReadVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Int16) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewVarReader(fd, name))
 	value, err := d.Int16()
 	if err != nil {
@@ -2110,21 +2184,31 @@ func (t *Int16) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Int16) ReadBuffer(buffer []byte) (syscall.Status) {
+	d := NewDecoder(bytes.NewBuffer(buffer))
+	value, err := d.Int16()
+	if err != nil {
+		return syscall.StatusFail
+	}
 
-
-func (t *Int16) CreateDirectory(fd syscall.Fd, name string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0x99,0x7f,0x69,0x9c,0x17,0xfd,0x06,0x74,0x8c,0x2d,0xba,0xc4,0x61,0x01,0x35,0x21,0xf1,0x97,0xd8,0x1e,0x74,0x3c,0x2f,0x96,0x56,0xe6,0xdc,0xfc,0x14,0x1e,0x0d,0x83,0x36,0xdc,0x73,0x36,0xb0,0xf4,0x9e,0x40,0x2b,0xfe,0x97,0x6f,0xfa,0xa5,0x27,0xac,0xe1,0xa2,0x57,0x2a,0xae,0x6d,0x18,0x22,0xe2,0xdc,0xd8,0x79,0xe0,0xb6,0xf6,0x7e, }  
-       return goodmiddleman.CreateDirectory(fd, name, "", hash)
+	*t = Int16(*value)
+	return syscall.StatusOk
 }
 
-func (t *Int16) CreateDirectoryPath(path string, name string) (syscall.Status) {
+
+func (t *Int16) CreateDirectory(path string, name string) (syscall.Status) {
        hash := goodmiddleman.HashValue{ 0x99,0x7f,0x69,0x9c,0x17,0xfd,0x06,0x74,0x8c,0x2d,0xba,0xc4,0x61,0x01,0x35,0x21,0xf1,0x97,0xd8,0x1e,0x74,0x3c,0x2f,0x96,0x56,0xe6,0xdc,0xfc,0x14,0x1e,0x0d,0x83,0x36,0xdc,0x73,0x36,0xb0,0xf4,0x9e,0x40,0x2b,0xfe,0x97,0x6f,0xfa,0xa5,0x27,0xac,0xe1,0xa2,0x57,0x2a,0xae,0x6d,0x18,0x22,0xe2,0xdc,0xd8,0x79,0xe0,0xb6,0xf6,0x7e, }
-       return goodmiddleman.CreateDirectoryPath(path,"", hash)
+       return goodmiddleman.CreateDirectory(path,"", hash)
+}
+
+
+func (t *Int16) GetHash() ([]byte) {
+	return []byte{ 0x99,0x7f,0x69,0x9c,0x17,0xfd,0x06,0x74,0x8c,0x2d,0xba,0xc4,0x61,0x01,0x35,0x21,0xf1,0x97,0xd8,0x1e,0x74,0x3c,0x2f,0x96,0x56,0xe6,0xdc,0xfc,0x14,0x1e,0x0d,0x83,0x36,0xdc,0x73,0x36,0xb0,0xf4,0x9e,0x40,0x2b,0xfe,0x97,0x6f,0xfa,0xa5,0x27,0xac,0xe1,0xa2,0x57,0x2a,0xae,0x6d,0x18,0x22,0xe2,0xdc,0xd8,0x79,0xe0,0xb6,0xf6,0x7e, }
 }
 type Uint16 uint16
 
 func (t *Uint16) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscall.Status) {
-	serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+	serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
 		return 0, status
@@ -2138,22 +2222,10 @@ func (t *Uint16) IpcWrite(serviceName string, hostname string) (syscall.Fd, sysc
 	}
 
 
-	netFd, status := goodmiddleman.IpcRepeat(serviceFd, sName, hostname, nil)
+	netFd, status := goodmiddleman.Ipc(serviceFd, sName, hostname, t)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling IpcWriteUint16: %v\n", status)
 		return 0, status
-	}
-	writer := goodmiddleman.NewWriter(netFd)
-	goodmiddleman.Close(serviceFd)
-	e := NewEncoder(writer)
-	err := e.Uint16(uint16(*t))
-	if err != nil {
-		return 0, syscall.StatusWriteFail
-	}
-
-	err = e.Flush()
-	if err != nil {
-		return 0, syscall.StatusWriteFail
 	}
 
 	return netFd, syscall.StatusOk
@@ -2176,8 +2248,12 @@ func (t *Uint16) Write(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Uint16) WriteVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Uint16) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 	e := NewEncoder(goodmiddleman.NewVarWriter(fd, name))
 	err := e.Uint16(uint16(*t))
 	if err != nil {
@@ -2189,9 +2265,25 @@ func (t *Uint16) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 		return syscall.StatusWriteFail
 	}
 
+
 	return syscall.StatusOk
 }
 
+func (t *Uint16) WriteBuffer() ([]byte, syscall.Status) {
+	var buffer *bytes.Buffer
+	e := NewEncoder(buffer)
+	err := e.Uint16(uint16(*t))
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	err = e.Flush()
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	return buffer.Bytes(), syscall.StatusOk
+}
 
 func (t *Uint16) Read(fd syscall.Fd) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewReader(fd))
@@ -2204,8 +2296,12 @@ func (t *Uint16) Read(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Uint16) ReadVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Uint16) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewVarReader(fd, name))
 	value, err := d.Uint16()
 	if err != nil {
@@ -2216,21 +2312,31 @@ func (t *Uint16) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Uint16) ReadBuffer(buffer []byte) (syscall.Status) {
+	d := NewDecoder(bytes.NewBuffer(buffer))
+	value, err := d.Uint16()
+	if err != nil {
+		return syscall.StatusFail
+	}
 
-
-func (t *Uint16) CreateDirectory(fd syscall.Fd, name string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0xa9,0x1f,0x92,0xf4,0xe9,0x96,0xb6,0xd4,0xa4,0xcb,0x85,0x8d,0x11,0x80,0x20,0x10,0xd6,0x29,0xba,0x29,0xe1,0x89,0x50,0x2c,0xa0,0xf2,0xcb,0x1d,0x86,0xb8,0x27,0x3b,0x67,0xf3,0x35,0x72,0xd1,0x78,0x15,0xcc,0xb0,0x94,0x94,0x6f,0x02,0xab,0x2e,0x46,0xcd,0x74,0xea,0xf5,0x15,0x0a,0x26,0xdc,0x4e,0xf7,0x0d,0x9f,0x3a,0x9c,0x6e,0x55, }  
-       return goodmiddleman.CreateDirectory(fd, name, "", hash)
+	*t = Uint16(*value)
+	return syscall.StatusOk
 }
 
-func (t *Uint16) CreateDirectoryPath(path string, name string) (syscall.Status) {
+
+func (t *Uint16) CreateDirectory(path string, name string) (syscall.Status) {
        hash := goodmiddleman.HashValue{ 0xa9,0x1f,0x92,0xf4,0xe9,0x96,0xb6,0xd4,0xa4,0xcb,0x85,0x8d,0x11,0x80,0x20,0x10,0xd6,0x29,0xba,0x29,0xe1,0x89,0x50,0x2c,0xa0,0xf2,0xcb,0x1d,0x86,0xb8,0x27,0x3b,0x67,0xf3,0x35,0x72,0xd1,0x78,0x15,0xcc,0xb0,0x94,0x94,0x6f,0x02,0xab,0x2e,0x46,0xcd,0x74,0xea,0xf5,0x15,0x0a,0x26,0xdc,0x4e,0xf7,0x0d,0x9f,0x3a,0x9c,0x6e,0x55, }
-       return goodmiddleman.CreateDirectoryPath(path,"", hash)
+       return goodmiddleman.CreateDirectory(path,"", hash)
+}
+
+
+func (t *Uint16) GetHash() ([]byte) {
+	return []byte{ 0xa9,0x1f,0x92,0xf4,0xe9,0x96,0xb6,0xd4,0xa4,0xcb,0x85,0x8d,0x11,0x80,0x20,0x10,0xd6,0x29,0xba,0x29,0xe1,0x89,0x50,0x2c,0xa0,0xf2,0xcb,0x1d,0x86,0xb8,0x27,0x3b,0x67,0xf3,0x35,0x72,0xd1,0x78,0x15,0xcc,0xb0,0x94,0x94,0x6f,0x02,0xab,0x2e,0x46,0xcd,0x74,0xea,0xf5,0x15,0x0a,0x26,0xdc,0x4e,0xf7,0x0d,0x9f,0x3a,0x9c,0x6e,0x55, }
 }
 type Int32 int32
 
 func (t *Int32) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscall.Status) {
-	serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+	serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
 		return 0, status
@@ -2244,22 +2350,10 @@ func (t *Int32) IpcWrite(serviceName string, hostname string) (syscall.Fd, sysca
 	}
 
 
-	netFd, status := goodmiddleman.IpcRepeat(serviceFd, sName, hostname, nil)
+	netFd, status := goodmiddleman.Ipc(serviceFd, sName, hostname, t)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling IpcWriteInt32: %v\n", status)
 		return 0, status
-	}
-	writer := goodmiddleman.NewWriter(netFd)
-	goodmiddleman.Close(serviceFd)
-	e := NewEncoder(writer)
-	err := e.Int32(int32(*t))
-	if err != nil {
-		return 0, syscall.StatusWriteFail
-	}
-
-	err = e.Flush()
-	if err != nil {
-		return 0, syscall.StatusWriteFail
 	}
 
 	return netFd, syscall.StatusOk
@@ -2282,8 +2376,12 @@ func (t *Int32) Write(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Int32) WriteVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Int32) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 	e := NewEncoder(goodmiddleman.NewVarWriter(fd, name))
 	err := e.Int32(int32(*t))
 	if err != nil {
@@ -2295,9 +2393,25 @@ func (t *Int32) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 		return syscall.StatusWriteFail
 	}
 
+
 	return syscall.StatusOk
 }
 
+func (t *Int32) WriteBuffer() ([]byte, syscall.Status) {
+	var buffer *bytes.Buffer
+	e := NewEncoder(buffer)
+	err := e.Int32(int32(*t))
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	err = e.Flush()
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	return buffer.Bytes(), syscall.StatusOk
+}
 
 func (t *Int32) Read(fd syscall.Fd) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewReader(fd))
@@ -2310,8 +2424,12 @@ func (t *Int32) Read(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Int32) ReadVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Int32) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewVarReader(fd, name))
 	value, err := d.Int32()
 	if err != nil {
@@ -2322,21 +2440,31 @@ func (t *Int32) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Int32) ReadBuffer(buffer []byte) (syscall.Status) {
+	d := NewDecoder(bytes.NewBuffer(buffer))
+	value, err := d.Int32()
+	if err != nil {
+		return syscall.StatusFail
+	}
 
-
-func (t *Int32) CreateDirectory(fd syscall.Fd, name string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0xeb,0xc1,0x67,0x8b,0x06,0x82,0x70,0x21,0x38,0xc2,0xd9,0x9e,0x33,0x22,0xd1,0xa8,0xc7,0x2e,0x9b,0x68,0xe9,0x41,0x12,0x00,0x1e,0x3e,0x51,0xa8,0xf5,0xd9,0xfa,0x34,0x0c,0x44,0x9c,0x06,0x6d,0x9d,0x4c,0xe7,0x2a,0x06,0xab,0x75,0x77,0x5d,0xdf,0x28,0x34,0x88,0x7c,0x7e,0x96,0x97,0xbb,0x8a,0x95,0xfe,0x07,0x65,0xf7,0x7c,0x7e,0x4c, }  
-       return goodmiddleman.CreateDirectory(fd, name, "", hash)
+	*t = Int32(*value)
+	return syscall.StatusOk
 }
 
-func (t *Int32) CreateDirectoryPath(path string, name string) (syscall.Status) {
+
+func (t *Int32) CreateDirectory(path string, name string) (syscall.Status) {
        hash := goodmiddleman.HashValue{ 0xeb,0xc1,0x67,0x8b,0x06,0x82,0x70,0x21,0x38,0xc2,0xd9,0x9e,0x33,0x22,0xd1,0xa8,0xc7,0x2e,0x9b,0x68,0xe9,0x41,0x12,0x00,0x1e,0x3e,0x51,0xa8,0xf5,0xd9,0xfa,0x34,0x0c,0x44,0x9c,0x06,0x6d,0x9d,0x4c,0xe7,0x2a,0x06,0xab,0x75,0x77,0x5d,0xdf,0x28,0x34,0x88,0x7c,0x7e,0x96,0x97,0xbb,0x8a,0x95,0xfe,0x07,0x65,0xf7,0x7c,0x7e,0x4c, }
-       return goodmiddleman.CreateDirectoryPath(path,"", hash)
+       return goodmiddleman.CreateDirectory(path,"", hash)
+}
+
+
+func (t *Int32) GetHash() ([]byte) {
+	return []byte{ 0xeb,0xc1,0x67,0x8b,0x06,0x82,0x70,0x21,0x38,0xc2,0xd9,0x9e,0x33,0x22,0xd1,0xa8,0xc7,0x2e,0x9b,0x68,0xe9,0x41,0x12,0x00,0x1e,0x3e,0x51,0xa8,0xf5,0xd9,0xfa,0x34,0x0c,0x44,0x9c,0x06,0x6d,0x9d,0x4c,0xe7,0x2a,0x06,0xab,0x75,0x77,0x5d,0xdf,0x28,0x34,0x88,0x7c,0x7e,0x96,0x97,0xbb,0x8a,0x95,0xfe,0x07,0x65,0xf7,0x7c,0x7e,0x4c, }
 }
 type Uint32 uint32
 
 func (t *Uint32) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscall.Status) {
-	serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+	serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
 		return 0, status
@@ -2350,22 +2478,10 @@ func (t *Uint32) IpcWrite(serviceName string, hostname string) (syscall.Fd, sysc
 	}
 
 
-	netFd, status := goodmiddleman.IpcRepeat(serviceFd, sName, hostname, nil)
+	netFd, status := goodmiddleman.Ipc(serviceFd, sName, hostname, t)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling IpcWriteUint32: %v\n", status)
 		return 0, status
-	}
-	writer := goodmiddleman.NewWriter(netFd)
-	goodmiddleman.Close(serviceFd)
-	e := NewEncoder(writer)
-	err := e.Uint32(uint32(*t))
-	if err != nil {
-		return 0, syscall.StatusWriteFail
-	}
-
-	err = e.Flush()
-	if err != nil {
-		return 0, syscall.StatusWriteFail
 	}
 
 	return netFd, syscall.StatusOk
@@ -2388,8 +2504,12 @@ func (t *Uint32) Write(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Uint32) WriteVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Uint32) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 	e := NewEncoder(goodmiddleman.NewVarWriter(fd, name))
 	err := e.Uint32(uint32(*t))
 	if err != nil {
@@ -2401,9 +2521,25 @@ func (t *Uint32) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 		return syscall.StatusWriteFail
 	}
 
+
 	return syscall.StatusOk
 }
 
+func (t *Uint32) WriteBuffer() ([]byte, syscall.Status) {
+	var buffer *bytes.Buffer
+	e := NewEncoder(buffer)
+	err := e.Uint32(uint32(*t))
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	err = e.Flush()
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	return buffer.Bytes(), syscall.StatusOk
+}
 
 func (t *Uint32) Read(fd syscall.Fd) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewReader(fd))
@@ -2416,8 +2552,12 @@ func (t *Uint32) Read(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Uint32) ReadVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Uint32) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewVarReader(fd, name))
 	value, err := d.Uint32()
 	if err != nil {
@@ -2428,21 +2568,31 @@ func (t *Uint32) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Uint32) ReadBuffer(buffer []byte) (syscall.Status) {
+	d := NewDecoder(bytes.NewBuffer(buffer))
+	value, err := d.Uint32()
+	if err != nil {
+		return syscall.StatusFail
+	}
 
-
-func (t *Uint32) CreateDirectory(fd syscall.Fd, name string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0xce,0xf4,0x3a,0x05,0xae,0x67,0xd9,0x73,0xc2,0xa2,0x1d,0xf8,0xcd,0xf9,0xd2,0xde,0x69,0x8d,0x0d,0xb7,0x61,0xb9,0x51,0x22,0x58,0xed,0x8f,0xb1,0x83,0xf1,0x5c,0xff,0x5b,0x84,0xe2,0x14,0x0e,0x10,0x68,0x3f,0x7a,0xd9,0xa7,0x8f,0x5b,0xe4,0x9e,0x4e,0x00,0x7d,0xcb,0xfb,0xd1,0x69,0x59,0x9d,0xbf,0x9b,0x75,0x65,0x15,0x9e,0x8b,0x82, }  
-       return goodmiddleman.CreateDirectory(fd, name, "", hash)
+	*t = Uint32(*value)
+	return syscall.StatusOk
 }
 
-func (t *Uint32) CreateDirectoryPath(path string, name string) (syscall.Status) {
+
+func (t *Uint32) CreateDirectory(path string, name string) (syscall.Status) {
        hash := goodmiddleman.HashValue{ 0xce,0xf4,0x3a,0x05,0xae,0x67,0xd9,0x73,0xc2,0xa2,0x1d,0xf8,0xcd,0xf9,0xd2,0xde,0x69,0x8d,0x0d,0xb7,0x61,0xb9,0x51,0x22,0x58,0xed,0x8f,0xb1,0x83,0xf1,0x5c,0xff,0x5b,0x84,0xe2,0x14,0x0e,0x10,0x68,0x3f,0x7a,0xd9,0xa7,0x8f,0x5b,0xe4,0x9e,0x4e,0x00,0x7d,0xcb,0xfb,0xd1,0x69,0x59,0x9d,0xbf,0x9b,0x75,0x65,0x15,0x9e,0x8b,0x82, }
-       return goodmiddleman.CreateDirectoryPath(path,"", hash)
+       return goodmiddleman.CreateDirectory(path,"", hash)
+}
+
+
+func (t *Uint32) GetHash() ([]byte) {
+	return []byte{ 0xce,0xf4,0x3a,0x05,0xae,0x67,0xd9,0x73,0xc2,0xa2,0x1d,0xf8,0xcd,0xf9,0xd2,0xde,0x69,0x8d,0x0d,0xb7,0x61,0xb9,0x51,0x22,0x58,0xed,0x8f,0xb1,0x83,0xf1,0x5c,0xff,0x5b,0x84,0xe2,0x14,0x0e,0x10,0x68,0x3f,0x7a,0xd9,0xa7,0x8f,0x5b,0xe4,0x9e,0x4e,0x00,0x7d,0xcb,0xfb,0xd1,0x69,0x59,0x9d,0xbf,0x9b,0x75,0x65,0x15,0x9e,0x8b,0x82, }
 }
 type Int64 int64
 
 func (t *Int64) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscall.Status) {
-	serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+	serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
 		return 0, status
@@ -2456,22 +2606,10 @@ func (t *Int64) IpcWrite(serviceName string, hostname string) (syscall.Fd, sysca
 	}
 
 
-	netFd, status := goodmiddleman.IpcRepeat(serviceFd, sName, hostname, nil)
+	netFd, status := goodmiddleman.Ipc(serviceFd, sName, hostname, t)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling IpcWriteInt64: %v\n", status)
 		return 0, status
-	}
-	writer := goodmiddleman.NewWriter(netFd)
-	goodmiddleman.Close(serviceFd)
-	e := NewEncoder(writer)
-	err := e.Int64(int64(*t))
-	if err != nil {
-		return 0, syscall.StatusWriteFail
-	}
-
-	err = e.Flush()
-	if err != nil {
-		return 0, syscall.StatusWriteFail
 	}
 
 	return netFd, syscall.StatusOk
@@ -2494,8 +2632,12 @@ func (t *Int64) Write(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Int64) WriteVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Int64) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 	e := NewEncoder(goodmiddleman.NewVarWriter(fd, name))
 	err := e.Int64(int64(*t))
 	if err != nil {
@@ -2507,9 +2649,25 @@ func (t *Int64) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 		return syscall.StatusWriteFail
 	}
 
+
 	return syscall.StatusOk
 }
 
+func (t *Int64) WriteBuffer() ([]byte, syscall.Status) {
+	var buffer *bytes.Buffer
+	e := NewEncoder(buffer)
+	err := e.Int64(int64(*t))
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	err = e.Flush()
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	return buffer.Bytes(), syscall.StatusOk
+}
 
 func (t *Int64) Read(fd syscall.Fd) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewReader(fd))
@@ -2522,8 +2680,12 @@ func (t *Int64) Read(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Int64) ReadVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Int64) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewVarReader(fd, name))
 	value, err := d.Int64()
 	if err != nil {
@@ -2534,21 +2696,31 @@ func (t *Int64) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Int64) ReadBuffer(buffer []byte) (syscall.Status) {
+	d := NewDecoder(bytes.NewBuffer(buffer))
+	value, err := d.Int64()
+	if err != nil {
+		return syscall.StatusFail
+	}
 
-
-func (t *Int64) CreateDirectory(fd syscall.Fd, name string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0x56,0x16,0x70,0x35,0xd0,0x09,0x18,0x69,0x0e,0xae,0xad,0x60,0xd1,0xee,0x39,0xa8,0x61,0x45,0x58,0x5b,0x99,0x20,0x94,0x57,0x1f,0xb0,0x48,0xeb,0xb2,0xcf,0x5c,0xa5,0x8d,0xc7,0x8e,0x7e,0x3c,0x89,0xcd,0x2f,0xdc,0xf2,0x1c,0x2a,0xe3,0xd2,0x7f,0x98,0xc2,0xad,0x1c,0x3d,0x4e,0x62,0xd9,0xdb,0xc8,0xc8,0x59,0xc5,0xd5,0xc6,0xed,0x7a, }  
-       return goodmiddleman.CreateDirectory(fd, name, "", hash)
+	*t = Int64(*value)
+	return syscall.StatusOk
 }
 
-func (t *Int64) CreateDirectoryPath(path string, name string) (syscall.Status) {
+
+func (t *Int64) CreateDirectory(path string, name string) (syscall.Status) {
        hash := goodmiddleman.HashValue{ 0x56,0x16,0x70,0x35,0xd0,0x09,0x18,0x69,0x0e,0xae,0xad,0x60,0xd1,0xee,0x39,0xa8,0x61,0x45,0x58,0x5b,0x99,0x20,0x94,0x57,0x1f,0xb0,0x48,0xeb,0xb2,0xcf,0x5c,0xa5,0x8d,0xc7,0x8e,0x7e,0x3c,0x89,0xcd,0x2f,0xdc,0xf2,0x1c,0x2a,0xe3,0xd2,0x7f,0x98,0xc2,0xad,0x1c,0x3d,0x4e,0x62,0xd9,0xdb,0xc8,0xc8,0x59,0xc5,0xd5,0xc6,0xed,0x7a, }
-       return goodmiddleman.CreateDirectoryPath(path,"", hash)
+       return goodmiddleman.CreateDirectory(path,"", hash)
+}
+
+
+func (t *Int64) GetHash() ([]byte) {
+	return []byte{ 0x56,0x16,0x70,0x35,0xd0,0x09,0x18,0x69,0x0e,0xae,0xad,0x60,0xd1,0xee,0x39,0xa8,0x61,0x45,0x58,0x5b,0x99,0x20,0x94,0x57,0x1f,0xb0,0x48,0xeb,0xb2,0xcf,0x5c,0xa5,0x8d,0xc7,0x8e,0x7e,0x3c,0x89,0xcd,0x2f,0xdc,0xf2,0x1c,0x2a,0xe3,0xd2,0x7f,0x98,0xc2,0xad,0x1c,0x3d,0x4e,0x62,0xd9,0xdb,0xc8,0xc8,0x59,0xc5,0xd5,0xc6,0xed,0x7a, }
 }
 type Uint64 uint64
 
 func (t *Uint64) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscall.Status) {
-	serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+	serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
 		return 0, status
@@ -2562,22 +2734,10 @@ func (t *Uint64) IpcWrite(serviceName string, hostname string) (syscall.Fd, sysc
 	}
 
 
-	netFd, status := goodmiddleman.IpcRepeat(serviceFd, sName, hostname, nil)
+	netFd, status := goodmiddleman.Ipc(serviceFd, sName, hostname, t)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling IpcWriteUint64: %v\n", status)
 		return 0, status
-	}
-	writer := goodmiddleman.NewWriter(netFd)
-	goodmiddleman.Close(serviceFd)
-	e := NewEncoder(writer)
-	err := e.Uint64(uint64(*t))
-	if err != nil {
-		return 0, syscall.StatusWriteFail
-	}
-
-	err = e.Flush()
-	if err != nil {
-		return 0, syscall.StatusWriteFail
 	}
 
 	return netFd, syscall.StatusOk
@@ -2600,8 +2760,12 @@ func (t *Uint64) Write(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Uint64) WriteVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Uint64) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 	e := NewEncoder(goodmiddleman.NewVarWriter(fd, name))
 	err := e.Uint64(uint64(*t))
 	if err != nil {
@@ -2613,9 +2777,25 @@ func (t *Uint64) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 		return syscall.StatusWriteFail
 	}
 
+
 	return syscall.StatusOk
 }
 
+func (t *Uint64) WriteBuffer() ([]byte, syscall.Status) {
+	var buffer *bytes.Buffer
+	e := NewEncoder(buffer)
+	err := e.Uint64(uint64(*t))
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	err = e.Flush()
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	return buffer.Bytes(), syscall.StatusOk
+}
 
 func (t *Uint64) Read(fd syscall.Fd) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewReader(fd))
@@ -2628,8 +2808,12 @@ func (t *Uint64) Read(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Uint64) ReadVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Uint64) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewVarReader(fd, name))
 	value, err := d.Uint64()
 	if err != nil {
@@ -2640,21 +2824,31 @@ func (t *Uint64) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Uint64) ReadBuffer(buffer []byte) (syscall.Status) {
+	d := NewDecoder(bytes.NewBuffer(buffer))
+	value, err := d.Uint64()
+	if err != nil {
+		return syscall.StatusFail
+	}
 
-
-func (t *Uint64) CreateDirectory(fd syscall.Fd, name string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0x11,0x26,0xb3,0x0d,0x51,0x59,0x87,0x5e,0x0d,0x5b,0x93,0xfc,0x92,0xf0,0x78,0xaa,0x12,0xac,0x93,0xb8,0x30,0x1f,0x48,0x0e,0x13,0x4d,0x8b,0xfb,0x4c,0x58,0xfa,0x3a,0x69,0x6a,0x81,0x01,0xc5,0x47,0xc1,0x55,0x43,0x95,0x41,0xdf,0x3c,0x8e,0xb6,0x96,0x4a,0x3c,0x88,0xab,0x3f,0x88,0xed,0x37,0x5f,0x08,0x4a,0x41,0x8e,0xd5,0xda,0x1e, }  
-       return goodmiddleman.CreateDirectory(fd, name, "", hash)
+	*t = Uint64(*value)
+	return syscall.StatusOk
 }
 
-func (t *Uint64) CreateDirectoryPath(path string, name string) (syscall.Status) {
+
+func (t *Uint64) CreateDirectory(path string, name string) (syscall.Status) {
        hash := goodmiddleman.HashValue{ 0x11,0x26,0xb3,0x0d,0x51,0x59,0x87,0x5e,0x0d,0x5b,0x93,0xfc,0x92,0xf0,0x78,0xaa,0x12,0xac,0x93,0xb8,0x30,0x1f,0x48,0x0e,0x13,0x4d,0x8b,0xfb,0x4c,0x58,0xfa,0x3a,0x69,0x6a,0x81,0x01,0xc5,0x47,0xc1,0x55,0x43,0x95,0x41,0xdf,0x3c,0x8e,0xb6,0x96,0x4a,0x3c,0x88,0xab,0x3f,0x88,0xed,0x37,0x5f,0x08,0x4a,0x41,0x8e,0xd5,0xda,0x1e, }
-       return goodmiddleman.CreateDirectoryPath(path,"", hash)
+       return goodmiddleman.CreateDirectory(path,"", hash)
+}
+
+
+func (t *Uint64) GetHash() ([]byte) {
+	return []byte{ 0x11,0x26,0xb3,0x0d,0x51,0x59,0x87,0x5e,0x0d,0x5b,0x93,0xfc,0x92,0xf0,0x78,0xaa,0x12,0xac,0x93,0xb8,0x30,0x1f,0x48,0x0e,0x13,0x4d,0x8b,0xfb,0x4c,0x58,0xfa,0x3a,0x69,0x6a,0x81,0x01,0xc5,0x47,0xc1,0x55,0x43,0x95,0x41,0xdf,0x3c,0x8e,0xb6,0x96,0x4a,0x3c,0x88,0xab,0x3f,0x88,0xed,0x37,0x5f,0x08,0x4a,0x41,0x8e,0xd5,0xda,0x1e, }
 }
 type Float32 float32
 
 func (t *Float32) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscall.Status) {
-	serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+	serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
 		return 0, status
@@ -2668,22 +2862,10 @@ func (t *Float32) IpcWrite(serviceName string, hostname string) (syscall.Fd, sys
 	}
 
 
-	netFd, status := goodmiddleman.IpcRepeat(serviceFd, sName, hostname, nil)
+	netFd, status := goodmiddleman.Ipc(serviceFd, sName, hostname, t)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling IpcWriteFloat32: %v\n", status)
 		return 0, status
-	}
-	writer := goodmiddleman.NewWriter(netFd)
-	goodmiddleman.Close(serviceFd)
-	e := NewEncoder(writer)
-	err := e.Float32(float32(*t))
-	if err != nil {
-		return 0, syscall.StatusWriteFail
-	}
-
-	err = e.Flush()
-	if err != nil {
-		return 0, syscall.StatusWriteFail
 	}
 
 	return netFd, syscall.StatusOk
@@ -2706,8 +2888,12 @@ func (t *Float32) Write(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Float32) WriteVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Float32) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 	e := NewEncoder(goodmiddleman.NewVarWriter(fd, name))
 	err := e.Float32(float32(*t))
 	if err != nil {
@@ -2719,9 +2905,25 @@ func (t *Float32) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 		return syscall.StatusWriteFail
 	}
 
+
 	return syscall.StatusOk
 }
 
+func (t *Float32) WriteBuffer() ([]byte, syscall.Status) {
+	var buffer *bytes.Buffer
+	e := NewEncoder(buffer)
+	err := e.Float32(float32(*t))
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	err = e.Flush()
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	return buffer.Bytes(), syscall.StatusOk
+}
 
 func (t *Float32) Read(fd syscall.Fd) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewReader(fd))
@@ -2734,8 +2936,12 @@ func (t *Float32) Read(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Float32) ReadVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Float32) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewVarReader(fd, name))
 	value, err := d.Float32()
 	if err != nil {
@@ -2746,21 +2952,31 @@ func (t *Float32) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Float32) ReadBuffer(buffer []byte) (syscall.Status) {
+	d := NewDecoder(bytes.NewBuffer(buffer))
+	value, err := d.Float32()
+	if err != nil {
+		return syscall.StatusFail
+	}
 
-
-func (t *Float32) CreateDirectory(fd syscall.Fd, name string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0x42,0x36,0xae,0xd3,0x62,0xca,0x34,0x75,0x94,0x52,0xf0,0x5f,0x44,0x83,0x61,0x75,0x69,0x39,0xcf,0x69,0x74,0x91,0xee,0x8d,0x35,0x8c,0xd7,0xa1,0x63,0x0f,0x88,0x86,0x6b,0x52,0xdd,0x6d,0xe1,0xb2,0x26,0xf4,0x3a,0x9c,0x9e,0xf1,0x56,0x0d,0xf1,0x48,0x07,0x39,0x46,0xf8,0xe9,0xd3,0xab,0x86,0xe0,0x1c,0x98,0x0d,0x17,0x6b,0x02,0x63, }  
-       return goodmiddleman.CreateDirectory(fd, name, "", hash)
+	*t = Float32(*value)
+	return syscall.StatusOk
 }
 
-func (t *Float32) CreateDirectoryPath(path string, name string) (syscall.Status) {
+
+func (t *Float32) CreateDirectory(path string, name string) (syscall.Status) {
        hash := goodmiddleman.HashValue{ 0x42,0x36,0xae,0xd3,0x62,0xca,0x34,0x75,0x94,0x52,0xf0,0x5f,0x44,0x83,0x61,0x75,0x69,0x39,0xcf,0x69,0x74,0x91,0xee,0x8d,0x35,0x8c,0xd7,0xa1,0x63,0x0f,0x88,0x86,0x6b,0x52,0xdd,0x6d,0xe1,0xb2,0x26,0xf4,0x3a,0x9c,0x9e,0xf1,0x56,0x0d,0xf1,0x48,0x07,0x39,0x46,0xf8,0xe9,0xd3,0xab,0x86,0xe0,0x1c,0x98,0x0d,0x17,0x6b,0x02,0x63, }
-       return goodmiddleman.CreateDirectoryPath(path,"", hash)
+       return goodmiddleman.CreateDirectory(path,"", hash)
+}
+
+
+func (t *Float32) GetHash() ([]byte) {
+	return []byte{ 0x42,0x36,0xae,0xd3,0x62,0xca,0x34,0x75,0x94,0x52,0xf0,0x5f,0x44,0x83,0x61,0x75,0x69,0x39,0xcf,0x69,0x74,0x91,0xee,0x8d,0x35,0x8c,0xd7,0xa1,0x63,0x0f,0x88,0x86,0x6b,0x52,0xdd,0x6d,0xe1,0xb2,0x26,0xf4,0x3a,0x9c,0x9e,0xf1,0x56,0x0d,0xf1,0x48,0x07,0x39,0x46,0xf8,0xe9,0xd3,0xab,0x86,0xe0,0x1c,0x98,0x0d,0x17,0x6b,0x02,0x63, }
 }
 type Float64 float64
 
 func (t *Float64) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscall.Status) {
-	serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+	serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
 		return 0, status
@@ -2774,22 +2990,10 @@ func (t *Float64) IpcWrite(serviceName string, hostname string) (syscall.Fd, sys
 	}
 
 
-	netFd, status := goodmiddleman.IpcRepeat(serviceFd, sName, hostname, nil)
+	netFd, status := goodmiddleman.Ipc(serviceFd, sName, hostname, t)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling IpcWriteFloat64: %v\n", status)
 		return 0, status
-	}
-	writer := goodmiddleman.NewWriter(netFd)
-	goodmiddleman.Close(serviceFd)
-	e := NewEncoder(writer)
-	err := e.Float64(float64(*t))
-	if err != nil {
-		return 0, syscall.StatusWriteFail
-	}
-
-	err = e.Flush()
-	if err != nil {
-		return 0, syscall.StatusWriteFail
 	}
 
 	return netFd, syscall.StatusOk
@@ -2812,8 +3016,12 @@ func (t *Float64) Write(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Float64) WriteVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Float64) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 	e := NewEncoder(goodmiddleman.NewVarWriter(fd, name))
 	err := e.Float64(float64(*t))
 	if err != nil {
@@ -2825,9 +3033,25 @@ func (t *Float64) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 		return syscall.StatusWriteFail
 	}
 
+
 	return syscall.StatusOk
 }
 
+func (t *Float64) WriteBuffer() ([]byte, syscall.Status) {
+	var buffer *bytes.Buffer
+	e := NewEncoder(buffer)
+	err := e.Float64(float64(*t))
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	err = e.Flush()
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	return buffer.Bytes(), syscall.StatusOk
+}
 
 func (t *Float64) Read(fd syscall.Fd) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewReader(fd))
@@ -2840,8 +3064,12 @@ func (t *Float64) Read(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Float64) ReadVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Float64) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewVarReader(fd, name))
 	value, err := d.Float64()
 	if err != nil {
@@ -2852,21 +3080,31 @@ func (t *Float64) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Float64) ReadBuffer(buffer []byte) (syscall.Status) {
+	d := NewDecoder(bytes.NewBuffer(buffer))
+	value, err := d.Float64()
+	if err != nil {
+		return syscall.StatusFail
+	}
 
-
-func (t *Float64) CreateDirectory(fd syscall.Fd, name string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0x65,0x9b,0xb2,0x59,0x85,0xe2,0x60,0xe7,0x1e,0x12,0x17,0x3f,0xc3,0x1f,0x20,0x45,0x08,0x9e,0x7e,0x11,0x6b,0xaa,0xb3,0x1e,0x6d,0x7d,0x7a,0x5b,0xe3,0x3d,0x40,0xb5,0x40,0x06,0x52,0x85,0x37,0x80,0x2c,0xd8,0x7d,0x48,0x67,0xe3,0x9a,0xdd,0xc9,0x13,0x11,0x2c,0xa5,0xcc,0x5a,0x33,0xbc,0x35,0x6b,0x3e,0xa8,0x75,0x93,0x84,0xcf,0x1b, }  
-       return goodmiddleman.CreateDirectory(fd, name, "", hash)
+	*t = Float64(*value)
+	return syscall.StatusOk
 }
 
-func (t *Float64) CreateDirectoryPath(path string, name string) (syscall.Status) {
+
+func (t *Float64) CreateDirectory(path string, name string) (syscall.Status) {
        hash := goodmiddleman.HashValue{ 0x65,0x9b,0xb2,0x59,0x85,0xe2,0x60,0xe7,0x1e,0x12,0x17,0x3f,0xc3,0x1f,0x20,0x45,0x08,0x9e,0x7e,0x11,0x6b,0xaa,0xb3,0x1e,0x6d,0x7d,0x7a,0x5b,0xe3,0x3d,0x40,0xb5,0x40,0x06,0x52,0x85,0x37,0x80,0x2c,0xd8,0x7d,0x48,0x67,0xe3,0x9a,0xdd,0xc9,0x13,0x11,0x2c,0xa5,0xcc,0x5a,0x33,0xbc,0x35,0x6b,0x3e,0xa8,0x75,0x93,0x84,0xcf,0x1b, }
-       return goodmiddleman.CreateDirectoryPath(path,"", hash)
+       return goodmiddleman.CreateDirectory(path,"", hash)
+}
+
+
+func (t *Float64) GetHash() ([]byte) {
+	return []byte{ 0x65,0x9b,0xb2,0x59,0x85,0xe2,0x60,0xe7,0x1e,0x12,0x17,0x3f,0xc3,0x1f,0x20,0x45,0x08,0x9e,0x7e,0x11,0x6b,0xaa,0xb3,0x1e,0x6d,0x7d,0x7a,0x5b,0xe3,0x3d,0x40,0xb5,0x40,0x06,0x52,0x85,0x37,0x80,0x2c,0xd8,0x7d,0x48,0x67,0xe3,0x9a,0xdd,0xc9,0x13,0x11,0x2c,0xa5,0xcc,0x5a,0x33,0xbc,0x35,0x6b,0x3e,0xa8,0x75,0x93,0x84,0xcf,0x1b, }
 }
 type String string
 
 func (t *String) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscall.Status) {
-	serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+	serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
 		return 0, status
@@ -2880,22 +3118,10 @@ func (t *String) IpcWrite(serviceName string, hostname string) (syscall.Fd, sysc
 	}
 
 
-	netFd, status := goodmiddleman.IpcRepeat(serviceFd, sName, hostname, nil)
+	netFd, status := goodmiddleman.Ipc(serviceFd, sName, hostname, t)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling IpcWriteString: %v\n", status)
 		return 0, status
-	}
-	writer := goodmiddleman.NewWriter(netFd)
-	goodmiddleman.Close(serviceFd)
-	e := NewEncoder(writer)
-	err := e.String(string(*t))
-	if err != nil {
-		return 0, syscall.StatusWriteFail
-	}
-
-	err = e.Flush()
-	if err != nil {
-		return 0, syscall.StatusWriteFail
 	}
 
 	return netFd, syscall.StatusOk
@@ -2918,8 +3144,12 @@ func (t *String) Write(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *String) WriteVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *String) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 	e := NewEncoder(goodmiddleman.NewVarWriter(fd, name))
 	err := e.String(string(*t))
 	if err != nil {
@@ -2931,9 +3161,25 @@ func (t *String) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 		return syscall.StatusWriteFail
 	}
 
+
 	return syscall.StatusOk
 }
 
+func (t *String) WriteBuffer() ([]byte, syscall.Status) {
+	var buffer *bytes.Buffer
+	e := NewEncoder(buffer)
+	err := e.String(string(*t))
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	err = e.Flush()
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	return buffer.Bytes(), syscall.StatusOk
+}
 
 func (t *String) Read(fd syscall.Fd) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewReader(fd))
@@ -2946,8 +3192,12 @@ func (t *String) Read(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *String) ReadVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *String) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewVarReader(fd, name))
 	value, err := d.String()
 	if err != nil {
@@ -2958,19 +3208,29 @@ func (t *String) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *String) ReadBuffer(buffer []byte) (syscall.Status) {
+	d := NewDecoder(bytes.NewBuffer(buffer))
+	value, err := d.String()
+	if err != nil {
+		return syscall.StatusFail
+	}
 
-
-func (t *String) CreateDirectory(fd syscall.Fd, name string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{ 0x27,0x57,0xcb,0x3c,0xaf,0xc3,0x9a,0xf4,0x51,0xab,0xb2,0x69,0x7b,0xe7,0x9b,0x4a,0xb6,0x1d,0x63,0xd7,0x4d,0x85,0xb0,0x41,0x86,0x29,0xde,0x8c,0x26,0x81,0x1b,0x52,0x9f,0x3f,0x37,0x80,0xd0,0x15,0x00,0x63,0xff,0x55,0xa2,0xbe,0xee,0x74,0xc4,0xec,0x10,0x2a,0x2a,0x27,0x31,0xa1,0xf1,0xf7,0xf1,0x0d,0x47,0x3a,0xd1,0x8a,0x6a,0x87, }  
-       return goodmiddleman.CreateDirectory(fd, name, "", hash)
+	*t = String(*value)
+	return syscall.StatusOk
 }
 
-func (t *String) CreateDirectoryPath(path string, name string) (syscall.Status) {
+
+func (t *String) CreateDirectory(path string, name string) (syscall.Status) {
        hash := goodmiddleman.HashValue{ 0x27,0x57,0xcb,0x3c,0xaf,0xc3,0x9a,0xf4,0x51,0xab,0xb2,0x69,0x7b,0xe7,0x9b,0x4a,0xb6,0x1d,0x63,0xd7,0x4d,0x85,0xb0,0x41,0x86,0x29,0xde,0x8c,0x26,0x81,0x1b,0x52,0x9f,0x3f,0x37,0x80,0xd0,0x15,0x00,0x63,0xff,0x55,0xa2,0xbe,0xee,0x74,0xc4,0xec,0x10,0x2a,0x2a,0x27,0x31,0xa1,0xf1,0xf7,0xf1,0x0d,0x47,0x3a,0xd1,0x8a,0x6a,0x87, }
-       return goodmiddleman.CreateDirectoryPath(path,"", hash)
+       return goodmiddleman.CreateDirectory(path,"", hash)
+}
+
+
+func (t *String) GetHash() ([]byte) {
+	return []byte{ 0x27,0x57,0xcb,0x3c,0xaf,0xc3,0x9a,0xf4,0x51,0xab,0xb2,0x69,0x7b,0xe7,0x9b,0x4a,0xb6,0x1d,0x63,0xd7,0x4d,0x85,0xb0,0x41,0x86,0x29,0xde,0x8c,0x26,0x81,0x1b,0x52,0x9f,0x3f,0x37,0x80,0xd0,0x15,0x00,0x63,0xff,0x55,0xa2,0xbe,0xee,0x74,0xc4,0xec,0x10,0x2a,0x2a,0x27,0x31,0xa1,0xf1,0xf7,0xf1,0x0d,0x47,0x3a,0xd1,0x8a,0x6a,0x87, }
 }
 func (t *Any) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscall.Status) {
-	serviceFd, status := goodmiddleman.OpenDirectoryPath("/services/" + serviceName)
+	serviceFd, status := goodmiddleman.OpenDirectory("/services/" + serviceName)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling OpenDirectory /services/%s: %v\n", serviceName, status)
 		return 0, status
@@ -2984,22 +3244,10 @@ func (t *Any) IpcWrite(serviceName string, hostname string) (syscall.Fd, syscall
 	}
 
 
-	netFd, status := goodmiddleman.IpcRepeat(serviceFd, sName, hostname, nil)
+	netFd, status := goodmiddleman.Ipc(serviceFd, sName, hostname, t)
 	if status != syscall.StatusOk {
 		log.Fatalf ("Error calling IpcWriteAny %v\n", status)
 		return 0, status
-	}
-	writer := goodmiddleman.NewWriter(netFd)
-	goodmiddleman.Close(serviceFd)
-	e := NewEncoder(writer)
-	err := e.Any(*t)
-	if err != nil {
-		return 0, syscall.StatusWriteFail
-	}
-
-	err = e.Flush()
-	if err != nil {
-		return 0, syscall.StatusWriteFail
 	}
 
 	return netFd, syscall.StatusOk
@@ -3022,8 +3270,12 @@ func (t *Any) Write(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Any) WriteVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Any) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 	e := NewEncoder(goodmiddleman.NewVarWriter(fd, name))
 	err := e.Any(*t)
 	if err != nil {
@@ -3035,9 +3287,25 @@ func (t *Any) WriteVar(fd syscall.Fd, name string) (syscall.Status) {
 		return syscall.StatusWriteFail
 	}
 
+
 	return syscall.StatusOk
 }
 
+func (t *Any) WriteBuffer() ([]byte, syscall.Status) {
+	var buffer *bytes.Buffer
+	e := NewEncoder(buffer)
+	err := e.Any(*t)
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	err = e.Flush()
+	if err != nil {
+		return nil, syscall.StatusWriteFail
+	}
+
+	return buffer.Bytes(), syscall.StatusOk
+}
 
 func (t *Any) Read(fd syscall.Fd) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewReader(fd))
@@ -3050,9 +3318,24 @@ func (t *Any) Read(fd syscall.Fd) (syscall.Status) {
 	return syscall.StatusOk
 }
 
+func (t *Any) ReadVar(path string) (syscall.Status) {
+	fd, name, status := goodmiddleman.OpenPathLastDirectory(path)
+	if status != syscall.StatusOk {
+		return status
+	}
 
-func (t *Any) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 	d := NewDecoder(goodmiddleman.NewVarReader(fd, name))
+	value, err := d.Any()
+	if err != nil {
+		return syscall.StatusFail
+	}
+
+	t.Value = value.Value
+	return syscall.StatusOk
+}
+
+func (t *Any) ReadBuffer(buffer []byte) (syscall.Status) {
+	d := NewDecoder(bytes.NewBuffer(buffer))
 	value, err := d.Any()
 	if err != nil {
 		return syscall.StatusFail
@@ -3064,12 +3347,12 @@ func (t *Any) ReadVar(fd syscall.Fd, name string) (syscall.Status) {
 
 
 
-func (t *Any) CreateDirectory(fd syscall.Fd, name string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{0x40, 0xd3, 0x80, 0xd9, 0x2f, 0x53, 0xad, 0x12, 0xcf, 0x21, 0x94, 0x59, 0x68, 0x74, 0xa9, 0x17, 0x9f, 0x1e, 0xe3, 0xf9, 0x2e, 0x8f, 0x7c, 0x99, 0x4b, 0xf9, 0x4d, 0xb3, 0x29, 0x1a, 0xbb, 0x89, 0xc3, 0xff, 0x35, 0x1e, 0xd2, 0xb9, 0x11, 0x30, 0x15, 0x7f, 0xc7, 0xd3, 0x2f, 0x84, 0x2c, 0xed, 0x4b, 0x99, 0x8a, 0x9d, 0xe6, 0xe0, 0xe0, 0x1d, 0x98, 0x7a, 0x28, 0xd9, 0x69, 0x34, 0xe6, 0xcc}  
-       return goodmiddleman.CreateDirectory(fd, name, "", hash)
+
+func (t *Any) CreateDirectory(path string, name string) (syscall.Status) {
+       hash := goodmiddleman.HashValue{0x40, 0xd3, 0x80, 0xd9, 0x2f, 0x53, 0xad, 0x12, 0xcf, 0x21, 0x94, 0x59, 0x68, 0x74, 0xa9, 0x17, 0x9f, 0x1e, 0xe3, 0xf9, 0x2e, 0x8f, 0x7c, 0x99, 0x4b, 0xf9, 0x4d, 0xb3, 0x29, 0x1a, 0xbb, 0x89, 0xc3, 0xff, 0x35, 0x1e, 0xd2, 0xb9, 0x11, 0x30, 0x15, 0x7f, 0xc7, 0xd3, 0x2f, 0x84, 0x2c, 0xed, 0x4b, 0x99, 0x8a, 0x9d, 0xe6, 0xe0, 0xe0, 0x1d, 0x98, 0x7a, 0x28, 0xd9, 0x69, 0x34, 0xe6, 0xcc}
+       return goodmiddleman.CreateDirectory(path,"", hash)
 }
 
-func (t *Any) CreateDirectoryPath(path string, name string) (syscall.Status) {
-       hash := goodmiddleman.HashValue{0x40, 0xd3, 0x80, 0xd9, 0x2f, 0x53, 0xad, 0x12, 0xcf, 0x21, 0x94, 0x59, 0x68, 0x74, 0xa9, 0x17, 0x9f, 0x1e, 0xe3, 0xf9, 0x2e, 0x8f, 0x7c, 0x99, 0x4b, 0xf9, 0x4d, 0xb3, 0x29, 0x1a, 0xbb, 0x89, 0xc3, 0xff, 0x35, 0x1e, 0xd2, 0xb9, 0x11, 0x30, 0x15, 0x7f, 0xc7, 0xd3, 0x2f, 0x84, 0x2c, 0xed, 0x4b, 0x99, 0x8a, 0x9d, 0xe6, 0xe0, 0xe0, 0x1d, 0x98, 0x7a, 0x28, 0xd9, 0x69, 0x34, 0xe6, 0xcc}
-       return goodmiddleman.CreateDirectoryPath(path,"", hash)
+func (t *Any) GetHash() ([]byte) {
+	return []byte{0x40, 0xd3, 0x80, 0xd9, 0x2f, 0x53, 0xad, 0x12, 0xcf, 0x21, 0x94, 0x59, 0x68, 0x74, 0xa9, 0x17, 0x9f, 0x1e, 0xe3, 0xf9, 0x2e, 0x8f, 0x7c, 0x99, 0x4b, 0xf9, 0x4d, 0xb3, 0x29, 0x1a, 0xbb, 0x89, 0xc3, 0xff, 0x35, 0x1e, 0xd2, 0xb9, 0x11, 0x30, 0x15, 0x7f, 0xc7, 0xd3, 0x2f, 0x84, 0x2c, 0xed, 0x4b, 0x99, 0x8a, 0x9d, 0xe6, 0xe0, 0xe0, 0x1d, 0x98, 0x7a, 0x28, 0xd9, 0x69, 0x34, 0xe6, 0xcc}
 }
