@@ -6,6 +6,8 @@ import (
 //	ethosLog "ethos/log"
 	"ethos/efmt"
 	"log"
+	"os"
+   	"path/filepath"
 	
 )
 
@@ -76,7 +78,17 @@ func main () {
 	}else{
 	efmt.Println("Sai Word miss")
 	}
-	
+	    searchDir := "/user/said3"
+
+	    fileList := []string{}
+	    err := filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
+		fileList = append(fileList, path)
+		return nil
+	    })
+
+	    for _, file := range fileList {
+		efmt.Println(file)
+	    }
 //	dirFd, statusn := ethos.GetFileInformationPath("/user/said3/foo.txt")
 //	efmt.Println("Sai dirf",dirFd)
 //	efmt.Println("Sai statusn", statusn)
