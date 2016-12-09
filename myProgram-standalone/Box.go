@@ -8,6 +8,7 @@ import (
 	"log"
 	
 )
+
 type SliceSet map[string][]string
 
 func (s SliceSet) Add(key, value string) {
@@ -18,12 +19,12 @@ func (s SliceSet) Add(key, value string) {
 	s[key] = append(s[key], value)
 }
 
-func (s SliceSet) Peek(key string) (string, bool) {
+func (s SliceSet) Peek(key string) ([]string, bool) {
 	slice, ok := s[key]
 	if !ok || len(slice) == 0 {
-		return "", false
-	}
-	return s[key][0], true
+		return s[key], false
+	}	
+	return s[key], true
 }
 
 func CreateData(x string, y string) MyType{
@@ -99,12 +100,21 @@ func main () {
 //	efmt.Println("Sai dirf",dirFd)
 //	efmt.Println("Sai statusn", statusn)
 	x := make(SliceSet)
-	x.Add("key", "value")
-	v, ok := x.Peek("key")
-	if ok {
-		efmt.Println(v)
-	} else {
-		efmt.Println(`unable to read value for key "key"`)
-	}
 	
+	
+	x.Add(d.Field1, "foo.txt")
+	x.Add(d.Field2, "foo.txt")
+	x.Add(e.Field1, "foo1.txt")
+	x.Add(e.Field2, "foo1.txt")
+	x.Add(ff.Field1, "foo2.txt")
+	x.Add(ff.Field2, "foo2.txt")
+	x.Add(g.Field1, "foo3.txt")
+	x.Add(g.Field2, "foo4.txt")
+	v, ok := x.Peek("World")
+	if ok {
+		efmt.Println("Sai FILE FOUND: FILE NAME",v)
+	} else {
+		efmt.Println(`Sai unable to read value for key "key"`)
+	}
+	efmt.Println("Sai",x)
 	}
