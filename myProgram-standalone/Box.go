@@ -8,6 +8,23 @@ import (
 	"log"
 	
 )
+type SliceSet map[string][]string
+
+func (s SliceSet) Add(key, value string) {
+	_, ok := s[key]
+	if !ok {
+		s[key] = make([]string, 0, 20)
+	}
+	s[key] = append(s[key], value)
+}
+
+func (s SliceSet) Peek(key string) (string, bool) {
+	slice, ok := s[key]
+	if !ok || len(slice) == 0 {
+		return "", false
+	}
+	return s[key][0], true
+}
 
 func CreateData(x string, y string) MyType{
 	return MyType{x,y}
@@ -81,6 +98,13 @@ func main () {
 //	dirFd, statusn := ethos.GetFileInformationPath("/user/said3/foo.txt")
 //	efmt.Println("Sai dirf",dirFd)
 //	efmt.Println("Sai statusn", statusn)
-
+	x := make(SliceSet)
+	x.Add("key", "value")
+	v, ok := x.Peek("key")
+	if ok {
+		efmt.Println(v)
+	} else {
+		efmt.Println(`unable to read value for key "key"`)
+	}
 	
 	}
