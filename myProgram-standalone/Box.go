@@ -14,6 +14,16 @@ func CreateData(x string, y string) MyType{
 }
 
 
+func SearchWord(x string, y string, word string) int {
+	if x==word || y==word{
+		return 1
+	} 
+		return 0
+
+}
+ 
+
+
 func main () {
 
 	me := syscall.GetUser()
@@ -45,27 +55,31 @@ func main () {
 	
 	efmt.Println("Sai, status", status)
 	
-	d:= MyType{"bar","aa"}
-	status = d.ReadVar("/user/said3/foo.txt")
-	e:= MyType{"s","aa"}
-	e.ReadVar("/user/said3/foo1.txt")
+	
+	d:= MyType{"Aa","aa"}
+	d.ReadVar("/user/said3/foo.txt")
+	d:= MyType{"s","aa"}
+	d.ReadVar("/user/said3/foo1.txt")
 	f:= MyType{"s","aa"}
 	f.ReadVar("/user/said3/foo2.txt")
 	g:= MyType{"s","aa"}
-	g.ReadVar("/user/said3/foo2.txt")
+	g.ReadVar("/user/said3/foo3.txt")
 		
 	efmt.Println("Sai" , status)
 	efmt.Println("Sai Read out", d)
 	efmt.Println("Sai Read out2", e)
 	efmt.Println("Sai Read out4", f)
-	efmt.Println("Sai Read out4", g)
+	efmt.Println("Sai Read out3", g)
 
-	if d.Field1; d.Field2 == "Great"{
-	efmt.Println("Sai found the word")
-	}else
-	{
-	efmt.Println("Sai not found")
-	}	
+	if SearchWord(d.Field1, d.Field2, "Hello")==1{
+	efmt.Println("Sai Found Word")
+	}else{
+	efmt.Println("Sai Word miss")
+	}
+	
+//	dirFd, statusn := ethos.GetFileInformationPath("/user/said3/foo.txt")
+//	efmt.Println("Sai dirf",dirFd)
+//	efmt.Println("Sai statusn", statusn)
 
 	
 	}
