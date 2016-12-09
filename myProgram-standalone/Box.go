@@ -6,8 +6,6 @@ import (
 //	ethosLog "ethos/log"
 	"ethos/efmt"
 	"log"
-	"os"
-   	"path/filepath"
 	
 )
 
@@ -51,26 +49,26 @@ func main () {
 	efmt.Println("Sai, Input4", p4)
 	
 	status = p1.WriteVar("/user/said3/foo.txt")
-	p2.WriteVar("/user/said3/foo1.txt")
-	p3.WriteVar("/user/said3/foo2.txt")
-	p4.WriteVar("/user/said3/foo3.txt")
+	p2.WriteVar("/user/said3/"+"foo1.txt")
+	p3.WriteVar("/user/said3/"+"foo2.txt")
+	p4.WriteVar("/user/said3/"+"foo3.txt")
 	
 	efmt.Println("Sai, status", status)
 	
 	
 	d:= MyType{"Aa","aa"}
 	d.ReadVar("/user/said3/foo.txt")
-	d:= MyType{"s","aa"}
-	d.ReadVar("/user/said3/foo1.txt")
-	f:= MyType{"s","aa"}
-	f.ReadVar("/user/said3/foo2.txt")
+	e:= MyType{"s","aa"}
+	e.ReadVar("/user/said3/foo1.txt")
+	ff:= MyType{"s","aa"}
+	ff.ReadVar("/user/said3/foo2.txt")
 	g:= MyType{"s","aa"}
 	g.ReadVar("/user/said3/foo3.txt")
 		
 	efmt.Println("Sai" , status)
 	efmt.Println("Sai Read out", d)
 	efmt.Println("Sai Read out2", e)
-	efmt.Println("Sai Read out4", f)
+	efmt.Println("Sai Read out4", ff)
 	efmt.Println("Sai Read out3", g)
 
 	if SearchWord(d.Field1, d.Field2, "Hello")==1{
@@ -78,17 +76,8 @@ func main () {
 	}else{
 	efmt.Println("Sai Word miss")
 	}
-	    searchDir := "/user/said3"
+	   
 
-	    fileList := []string{}
-	    err := filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
-		fileList = append(fileList, path)
-		return nil
-	    })
-
-	    for _, file := range fileList {
-		efmt.Println(file)
-	    }
 //	dirFd, statusn := ethos.GetFileInformationPath("/user/said3/foo.txt")
 //	efmt.Println("Sai dirf",dirFd)
 //	efmt.Println("Sai statusn", statusn)
