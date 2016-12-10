@@ -1,5 +1,6 @@
 package main
 
+
 import (
 	"ethos/syscall"
 	"ethos/ethos"
@@ -96,12 +97,13 @@ func main () {
 	}
 	   
 
-//	dirFd, statusn := ethos.GetFileInformationPath("/user/said3/foo.txt")
-//	efmt.Println("Sai dirf",dirFd)
-//	efmt.Println("Sai statusn", statusn)
+	dirFd, statusn := ethos.GetFileInformationPath("/user/said3/foo.txt")
+	efmt.Println("Sai dirf",dirFd)
+	efmt.Println("Sai statusn", statusn)
 	x := make(SliceSet)
 	
 	
+
 	x.Add(d.Field1, "foo.txt")
 	x.Add(d.Field2, "foo.txt")
 	x.Add(e.Field1, "foo1.txt")
@@ -110,6 +112,8 @@ func main () {
 	x.Add(ff.Field2, "foo2.txt")
 	x.Add(g.Field1, "foo3.txt")
 	x.Add(g.Field2, "foo4.txt")
+
+
 	v, ok := x.Peek("World")
 	if ok {
 		efmt.Println("Sai FILE FOUND: FILE NAME",v)
@@ -118,3 +122,5 @@ func main () {
 	}
 	efmt.Println("Sai",x)
 	}
+
+
