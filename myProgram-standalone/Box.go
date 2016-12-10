@@ -103,7 +103,11 @@ func main () {
 	x := make(SliceSet)
 	
 	
+	efmt.Println("Sai filetype", dirFd.FileType)
 
+	typeName, statusName := ethos.TypeNameOfFile("/user/said3/foo.txt")
+	efmt.Println("Sai typeName", typeName)
+	efmt.Println("Sai Status", statusName)
 	x.Add(d.Field1, "foo.txt")
 	x.Add(d.Field2, "foo.txt")
 	x.Add(e.Field1, "foo1.txt")
@@ -118,7 +122,7 @@ func main () {
 	if ok {
 		efmt.Println("Sai FILE FOUND: FILE NAME",v)
 	} else {
-		efmt.Println(`Sai unable to read value for key "key"`)
+		efmt.Println(`Sai FILE NOT FOUND`)
 	}
 	efmt.Println("Sai",x)
 	}
